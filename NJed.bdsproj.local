@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<BorlandProject>
+	<Transactions>
+    <Transaction>2014/11/14 18:41:51.188.bdsproj,E:\Jed0951_source\Jed.bdsproj=E:\Jed0951_source\NJed.bdsproj</Transaction>
+    <Transaction>2014/11/19 06:15:14.367.pas,E:\Jed0951_source\GLunit.pas=</Transaction>
+    <Transaction>2014/12/15 06:19:51.803.pas,E:\Jed0951_source\Unit2.pas=E:\Jed0951_source\U_uvedit.pas</Transaction>
+    <Transaction>2014/12/15 06:19:51.803.dfm,E:\Jed0951_source\Unit2.dfm=E:\Jed0951_source\U_uvedit.dfm</Transaction>
+    <Transaction>2015/01/11 12:18:15.082.pas,E:\Jed0951_source\Unit2.pas=E:\Jed0951_source\U_ObjImportOptions.pas</Transaction>
+    <Transaction>2015/01/11 12:18:15.082.dfm,E:\Jed0951_source\Unit2.dfm=E:\Jed0951_source\U_ObjImportOptions.dfm</Transaction>
+    <Transaction>2015/03/08 18:51:05.727.pas,E:\Jed0951_source\Unit2.pas=E:\Jed0951_source\OBJ_export.pas</Transaction>
+    <Transaction>2015/03/08 18:51:05.727.dfm,E:\Jed0951_source\Unit2.dfm=E:\Jed0951_source\OBJ_export.dfm</Transaction>
+    <Transaction>2022/10/09 10:59:21.994.pas,E:\Jed0951_source\U_VertexLight_edit.pas=</Transaction>
+    <Transaction>2022/10/09 10:59:21.994.dfm,E:\Jed0951_source\U_VertexLight_edit.dfm=</Transaction>
+    <Transaction>2022/10/09 11:01:00.355.pas,E:\Jed0951_source\Unit2.pas=E:\Jed0951_source\U_VertexLight_edit.pas</Transaction>
+    <Transaction>2022/10/09 11:01:00.355.dfm,E:\Jed0951_source\Unit2.dfm=E:\Jed0951_source\U_VertexLight_edit.dfm</Transaction>
+    <Transaction>2022/10/09 13:28:01.670.pas,E:\Jed0951_source\Unit2.pas=E:\Jed0951_source\U_SurfaceToolspas.pas</Transaction>
+    <Transaction>2022/10/09 13:28:01.670.dfm,E:\Jed0951_source\Unit2.dfm=E:\Jed0951_source\U_SurfaceToolspas.dfm</Transaction>
+    <Transaction>2022/10/09 13:32:25.115.pas,E:\Jed0951_source\U_SurfaceToolspas.pas=E:\Jed0951_source\U_SurfaceTools.pas</Transaction>
+    <Transaction>2022/10/09 13:32:25.115.dfm,E:\Jed0951_source\U_SurfaceToolspas.dfm=E:\Jed0951_source\U_SurfaceTools.dfm</Transaction>
+  </Transactions>
+</BorlandProject>

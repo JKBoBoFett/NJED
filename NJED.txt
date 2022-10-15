@@ -1,0 +1,29 @@
+
+NJED V.971(2022):
+Added face flags, two sided,collides with other objects
+Fixed face flags being ignored on 3do import
+Added ability to Manually edit Surface Vertex light intensites
+Enabled Manual Edit of sector Ambient light (effects lighting on things)
+Added shortcuts: Snap Grid to Object 'Shift+S', Snap View to Object 'ALT+S', View to Grid 'Shift+Z', Grid to View 'Z'
+
+NJED V.97(2016):
+Added .obj import, imports geometry and UV coordinates. Tested with Milkshape 3D and Blender.
+Added a warning if exporting a 3do with more then 512 vertices, 768 TX vertices, 512 faces in a mesh.
+In level preview, 3DO LOD 0 is now drawn not 3.
+Added an embedded manifest to require Administrator Execution Level. This fixes most plug-in compatiblity issues.
+Fixed cleaves intermittently jumping to mouse position in snap modes
+Fixed cleave to vertex only working in top view
+Hack to support 1024x1024 textures
+Added keyboard keys '-' '=' for zoom in and out
+Improved OpenGL support. Now using dglOpenGL header, not the buggy default Delphi unit.
+Added 'thing limit' override option in the episode header editor 
+
+NJED V.96(2014):
+Ported Delphi 2 source to Borland Delphi 2006
+Removed CD checks
+Added Grid Dot Steps 0.001,0.005,0.05
+Added Grid Snap Steps 0.0005,0.001
+Surface Stitch now copies surface and face flags
+Intial Walkplayer set to z:=0.120114;
+Added "-verbose 2 -windowgui" to generated "test" bat file
+changed undo limit from 4 to 200. User can now change undo limit in Tool->options->environment

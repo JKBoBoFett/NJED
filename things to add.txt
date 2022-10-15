@@ -1,0 +1,6 @@
+add the option to manually specify/override vertex lighting, including for 3dos
+also, not auto-resetting 3do node pivots would be great, but the option to do so should still be present
+
+also, a hotkey to align grid to camera
+
+A long list of all the functions where you can customize all shortcut keys!

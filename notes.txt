@@ -1,0 +1,327 @@
+rocedure CalcDefaultUVNormals(surf:TJKSurface; orgvx:integer; var un,vn:tvector);
+var
+    v1,v2:TJKVertex;
+    i:integer;
+begin
+ v1:=surf.Vertices[orgvx];
+ v2:=surf.Vertices[NextIdx(orgvx,surf.Vertices.Count)];
+ With un do
+ begin
+  dx:=v2.x-v1.x;
+  dy:=v2.y-v1.y;
+  dz:=v2.z-v1.z;
+ end;
+
+ Normalize(un);
+ With Surf do VMult(
+                    un.dx,un.dy,un.dz,
+                    normal.dx,normal.dy,normal.dz,
+                    vn.dx,vn.dy,vn.dz);
+
+Procedure ArrangeTextureBy(surf:TJKSurface;const un,vn:tvector;refx,refy,refz,refu,refv:double);
+var
+ i:integer;
+ tv:double;
+ normal:TVector;
+ vx:TJKVertex;
+ txv:TTXVertex;
+begin
+ for i:=0 to Surf.Vertices.Count-1 do
+ With Surf.TXVertices[i],Surf.Vertices[i] do
+ begin
+  u:=refu+SMult(un.dx,un.dy,un.dz,x-refx,y-refy,z-refz)*PixelPerUnit*surf.uscale;
+
+   //Result:=X1*X2+Y1*Y2+Z1*Z2;
+  vx:= Surf.Vertices[i];
+  txv:= Surf.TXVertices[i];
+  normal:=surf.normal;
+  tv:=x - DotProduct(x-refx,normal.x,y-refy,normal.y,z-refz,normal.z);
+  tv:= UVRound(SMult(normal.dx,normal.dy,normal.dz,x-refx,y-refy,z-refz)*PixelPerUnit*surf.uscale);
+
+  if Surf.SurfFlags and SFF_Flip<>0 then
+  v:=UVRound(refv+SMult(-vn.dx,-vn.dy,-vn.dz,x-refx,y-refy,z-refz)*PixelPerUnit*surf.vscale)
+  else v:=refv+SMult(vn.dx,vn.dy,vn.dz,x-refx,y-refy,z-refz)*PixelPerUnit*surf.vscale
+ end;
+end;
+
+
+Procedure NJEDCalcUVNormalsFrom(surf:TJKSurface; nv1:integer; var un,vn:Tvector);
+var nv2,nv3,i:integer;
+    v0,v1,v2,v3:TJKVertex;
+    tv1,tv2,tv3,txv:TTXVertex;
+    a,b,av,dxNormalU,dxNormalV,normal,xv,yv,dxu,pnormal,Unormal,Vnormal:TVector;
+    du1,dv1,du2,dv2:double;
+    d,du,dv,x,y,RefU,RefV,u1,u2:double;
+    r1,r2,r3,r4,Ref:TJKVertex;
+    minx,miny,minz,maxx,maxy,maxz,Xrefx,Xrefy,Xrefz,Yrefx,Yrefy,Yrefz:double;
+    UVVertex:TVertex;
+begin
+
+ if not FindTri(surf,nv1,nv2,nv3) then
+ begin
+  SetVec(un,0,0,0);
+  SetVec(vn,0,0,0);
+  exit;
+ end;
+
+ dxNormalU.x:=1;  dxNormalU.y:=0;  dxNormalU.z:=0;
+ dxNormalV.x:=0;  dxNormalV.y:=-1;  dxNormalV.z:=0;
+
+
+{
+ v0:=surf.vertices[0];
+ v1:=surf.vertices[1];
+ SetVec(xv,v1.x-v0.x,v1.y-v0.y,v1.z-v0.z);
+ if not Normalize(xv) then;
+ With Surf.Normal do
+ Vmult(dx,dy,dz,xv.dx,xv.dy,xv.dz,
+       yv.dx,yv.dy,yv.dz);
+
+ minx:=1E20;miny:=1E20;
+ maxx:=-1E20;maxy:=-1E20;
+ For i:=1 to surf.vertices.count-1 do
+ begin
+  v1:=surf.vertices[i];
+  x:=Smult(v1.x-v0.x,v1.y-v0.y,v1.z-v0.z,xv.dx,xv.dy,xv.dz);
+  y:=Smult(v1.x-v0.x,v1.y-v0.y,v1.z-v0.z,yv.dx,yv.dy,yv.dz);
+  if x<minx then minx:=x;
+  if y<miny then miny:=y;
+  if x>maxx then maxx:=x;
+  if y>maxy then maxy:=y;
+ end;
+
+ }
+  surf.GetRefVector(xv);
+
+ v0:=surf.vertices[0];
+
+ v1:=surf.vertices[1];
+ // tv1:=surf.txvertices[nv1];
+ v2:=surf.vertices[2];
+ // tv2:=surf.txvertices[nv2];
+ v3:=surf.vertices[3];
+ // tv3:=surf.txvertices[nv3];
+
+// Ref.x:=V0.X-0;
+// Ref.y:=V0.Y-0;
+// Ref.z:=V0.Z-0;
+
+
+ SetVec(xv, v2.x-(v1.x), v2.y-(v1.y), v2.z-(v1.z));
+
+    if Surf.normal.dz < 0 then
+   begin
+    SetVec(xv, v2.x-(v3.x), v2.y-(v3.y), v2.z-(v3.z));
+   end;
+
+ //  SetVec(xv, v2.x-(v1.x-v1.x), 0, 0);
+ SetVec(yv,v0.x-v1.x,v0.y-v1.y,v0.z-v1.z);
+ //SetVec(xv,v3.x-v0.x,v3.y-v0.y,v3.z-v0.z);
+
+// xv.x:=abs(xv.x);
+//
+//    pnormal.x:=  Surf.Normal.x*-1;
+//    pnormal.y:=  Surf.Normal.y*-1;
+ //   pnormal.z:=  Surf.Normal.z*-1;
+
+ pnormal.x:=  0;  pnormal.dx:=  0;
+  pnormal.y:=  1;  pnormal.dy:=  1;
+ pnormal.z:=  0;  pnormal.dz:=  0;
+
+
+{
+First of all, you need to compute your u and v vectors. u and v shall be orthogonal to the normal of your plane, and orthogonal to each other. There is no unique way to define them, but a convenient and fast way may be something like this:
+ n = [a, b, c]
+u = normalize([b, -a, 0]) // Assuming that a != 0 and b != 0, otherwise use c.
+v  = cross(n, u) // If n was normalized, v is already normalized. Otherwise normalize it.
+}
+if (surf.Normal.dz = 0)  then
+ begin
+ Unormal.dx:= surf.Normal.dy;
+ Unormal.dy:= -surf.Normal.dx;
+ Unormal.dz:=0;
+ end
+ else
+ begin
+ Unormal.dx:= surf.Normal.dz;
+ Unormal.dy:= -surf.Normal.dx;;
+ Unormal.dz:=0;
+ end;
+   Normalize(Unormal);
+
+    Vnormal:=VCross(Surf.Normal,Unormal);
+
+ if (surf.Normal.z = 1) then
+ begin
+   pnormal.x:=  0;  pnormal.dx:=  0;
+  pnormal.y:=  1;  pnormal.dy:=  1;
+ pnormal.z:=  0;  pnormal.dz:=  0;
+ end;
+
+  if (surf.Normal.z = -1) then
+ begin
+   pnormal.x:=  0;  pnormal.dx:=  0;
+  pnormal.y:=  -1;  pnormal.dy:=  -1;
+ pnormal.z:=  0;  pnormal.dz:=  0;
+ end;
+
+ if (surf.Normal.y = -1) then
+ begin
+   pnormal.x:=  0;  pnormal.dx:=  0;
+  pnormal.y:=  0;  pnormal.dy:=  0;
+ pnormal.z:=  -1;  pnormal.dz:=  -1;
+ end;
+
+ if (surf.Normal.y = 1) then
+ begin
+   pnormal.x:=  0;  pnormal.dx:=  0;
+  pnormal.y:=  0;  pnormal.dy:=  0;
+ pnormal.z:=  1;  pnormal.dz:=  1;
+ end;
+
+ if (surf.Normal.x = 1) then
+ begin
+   pnormal.x:=  0;  pnormal.dx:=  0;
+  pnormal.y:=  0;  pnormal.dy:=  0;
+ pnormal.z:=  1;  pnormal.dz:=  1;
+ end;
+
+  if (surf.Normal.x = -1) then
+ begin
+   pnormal.x:=  0;  pnormal.dx:=  0;
+  pnormal.y:=  0;  pnormal.dy:=  0;
+ pnormal.z:=  1;  pnormal.dz:=  1;
+ end;
+
+ //   xv:=VCross(pnormal,Surf.Normal);
+//   Normalize(xv);
+ //   yv:=VCross(Surf.Normal,XV);
+//    Normalize(yv);
+//  if not Normalize(xv) then;
+ With Surf.Normal do
+ Vmult(dx,dy,dz,xv.dx,xv.dy,xv.dz,
+       yv.dx,yv.dy,yv.dz);
+ minx:=0; miny:=0;minz:=0;
+ maxx:=0; maxy:=0;maxz:=0;
+For i:=0 to surf.vertices.count-1 do
+ begin
+
+ if surf.vertices[i].x<minx then minx:=surf.vertices[i].x;
+  if surf.vertices[i].y<miny then miny:=surf.vertices[i].y;
+  if surf.vertices[i].z<minz then minz:=surf.vertices[i].z;
+
+  if surf.vertices[i].x>maxx then maxx:=surf.vertices[i].x;
+  if surf.vertices[i].y>maxy then maxy:=surf.vertices[i].y;
+  if surf.vertices[i].z>maxz then maxz:=surf.vertices[i].z;
+ end;
+
+ xrefx:=minx-0;
+ xrefy:=miny-0;
+ xrefz:=minz-0;
+
+ yrefx:=minx-0;
+ yrefy:=miny-0;
+ yrefz:=minz-0;
+
+  Normalize(xv);
+
+
+
+  refu:=DotProduct(1,1,1 ,xv.dx,xv.dy,xv.dz);
+  u2:=DotProduct(v2.x-v1.x, v2.y-v1.y, v2.z-v1.z, 1,0,0);
+
+ // if u1>u2 then  SetVec(xv,-xv.dx,-xv.dy,-xv.dz);
+
+   // x:=DotProduct(v1.x-surf.vertices[2].x, v1.y-surf.vertices[2].y, v1.z-surf.vertices[2].z, xv.dx,xv.dy,xv.dz);
+ // x:=DotProduct(surf.vertices[2].x-v1.x, surf.vertices[2].y-v1.y, surf.vertices[2].z-v1.z, xv.dx,xv.dy,xv.dz);
+
+
+  VMult(xv.dx,xv.dy,xv.dz,
+       Surf.normal.dx,Surf.normal.dy,Surf.normal.dz,
+       yv.dx,yv.dy,yv.dz);
+
+  refv:=DotProduct(1,1,1 ,yv.dx,yv.dy,yv.dz);     
+
+
+    if refu <0 then
+  begin
+   xv.dx:=-xv.dx;
+   xv.dy:=-xv.dy;
+   xv.dz:=-xv.dz;
+  end;
+ For i:=0 to surf.vertices.count-1 do
+ begin
+  v1:=surf.vertices[i];
+  RefV:= Smult(maxx,maxy,maxz,Vnormal.dx,Vnormal.dy,Vnormal.dz);
+ // RefU:= Smult(maxx,maxy,maxz,xv.dx,xv.dy,xv.dz);
+
+//  xrefx:= (surf.vertices[1].x-surf.vertices[2].x);
+ // xrefy:= (surf.vertices[1].y-surf.vertices[2].y);
+ // xrefz:= (surf.vertices[1].z-surf.vertices[2].z);
+
+ //  x:=DotProduct(xrefx, xrefy, xrefz, xv.dx,xv.dy,xv.dz);
+
+ //  if x<0 then
+ //  begin
+ //  xv.dx:=-xv.dx;
+ //  xv.dy:=-xv.dy;
+ //  xv.dz:=-xv.dz;
+  // xrefx:= (surf.vertices[1].x-surf.vertices[2].x)*xv.dx;
+  // xrefy:= (surf.vertices[1].y-surf.vertices[2].y)*xv.dy;
+  // xrefz:= (surf.vertices[1].z-surf.vertices[2].z)*xv.dz;
+ //  end;
+
+ //  x:=DotProduct(xrefx, xrefy, xrefz, xv.dx,xv.dy,xv.dz);
+
+ if refu >0 then
+   if xv.y >0 then  // right side
+     x:=DotProduct(surf.vertices[2].x-v1.x, surf.vertices[2].y-v1.y, surf.vertices[2].z-v1.z, xv.dx,xv.dy,xv.dz)
+     else
+   x:=DotProduct(v1.x-surf.vertices[1].x, v1.y-surf.vertices[1].y, v1.z-surf.vertices[1].z, xv.dx,xv.dy,xv.dz);
+
+   if Surf.normal.dz < 0 then  //top side
+   begin
+   x:=DotProduct(surf.vertices[1].x-v1.x, surf.vertices[1].y-v1.y, surf.vertices[1].z-v1.z, xv.dx,xv.dy,xv.dz);
+   end;
+
+   if Surf.normal.dy > 0 then  //back side
+   begin
+    x:=DotProduct(surf.vertices[2].x-v1.x, surf.vertices[2].y-v1.y, surf.vertices[2].z-v1.z, xv.dx,xv.dy,xv.dz);
+   end;
+
+ // x:=DotProduct(v1.x-surf.vertices[1].x, v1.y-surf.vertices[1].y, v1.z-surf.vertices[1].z, xv.dx,xv.dy,xv.dz);
+  if refu <0 then
+  begin
+
+    x:=DotProduct(v1.x-surf.vertices[2].x, v1.y-surf.vertices[2].y, v1.z-surf.vertices[2].z, xv.dx,xv.dy,xv.dz);
+  if Surf.normal.dz < 0 then
+  begin
+  x:=DotProduct(surf.vertices[1].x-v1.x, surf.vertices[1].y-v1.y, surf.vertices[1].z-v1.z, xv.dx,xv.dy,xv.dz)
+ end;
+ // x:=DotProduct(surf.vertices[2].x-v1.x, surf.vertices[2].y-v1.y, surf.vertices[2].z-v1.z, xv.dx,xv.dy,xv.dz);
+  end;
+
+//////////////////////////////////////////////////////////////////////////////
+///
+
+ if refv >0 then
+ y:=DotProduct(v1.x-surf.vertices[0].x,v1.y-surf.vertices[0].y,v1.z-surf.vertices[0].z, yv.dx,yv.dy,yv.dz)
+ else
+ y:=DotProduct(surf.vertices[1].x-v1.x,surf.vertices[1].y-v1.y,surf.vertices[1].z-v1.z, yv.dx,yv.dy,yv.dz);
+
+   if Surf.normal.dz < 0 then   //for top side surf
+   begin
+  y:=DotProduct(surf.vertices[0].x-v1.x,surf.vertices[0].y-v1.y,surf.vertices[0].z-v1.z, yv.dx,yv.dy,yv.dz);
+   end;
+
+   if Surf.normal.dy > 0 then  //back side
+   begin
+    y:=DotProduct(surf.vertices[2].x-v1.x,surf.vertices[2].y-v1.y,surf.vertices[2].z-v1.z, yv.dx,yv.dy,yv.dz);
+   end;
+
+ txv:= level.Sectors[JedMain.Cur_SC].surfaces[JedMain.Cur_SF].TXVertices.GetItem(i);
+  txv.u:=x*320;
+  txv.v:=y*320;
+  level.Sectors[JedMain.Cur_SC].surfaces[JedMain.Cur_SF].TXVertices.Items[i]:=txv;
+ end;
+
