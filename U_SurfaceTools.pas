@@ -4,28 +4,28 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, ComCtrls,J_level,lev_utils,Jed_Main;
+  Dialogs, StdCtrls, ComCtrls,J_level,lev_utils,Jed_Main,misc_utils,geometry;
 
 type
   TSurfaceTools = class(TForm)
     Label1: TLabel;
     Label3: TLabel;
-    Memo1: TMemo;
     Info_Button: TButton;
     GroupBox1: TGroupBox;
-    CheckBox1: TCheckBox;
-    CheckBox2: TCheckBox;
-    CheckBox3: TCheckBox;
+    XCB: TCheckBox;
+    YCB: TCheckBox;
+    ZCB: TCheckBox;
     Edit3: TEdit;
     Edit1: TEdit;
     Scale_UpDown: TUpDown;
     Scale_ComboBox: TComboBox;
     Move_UpDown: TUpDown;
-    Collapse_Button: TButton;
     Inset_Button: TButton;
     Inset_ComboBox: TComboBox;
     Extrude_Button: TButton;
     EDextrude: TEdit;
+    Memo1: TMemo;
+    Collapse_Button: TButton;
     procedure Extrude_ButtonClick(Sender: TObject);
     procedure Inset_ButtonClick(Sender: TObject);
     procedure Scale_UpDownClick(Sender: TObject; Button: TUDBtnType);
@@ -56,23 +56,31 @@ begin
 end;
 
 procedure TSurfaceTools.Info_ButtonClick(Sender: TObject);
+var
+MVec:Tvector;
+Nvec:TVector;
 begin
-  PanMessage(mt_info,'Sectors unadjoined');
+ NJEDCalcSurfCenter(level.Sectors[JedMain.Cur_SC].surfaces[JedMain.Cur_SF],MVec.x,MVec.y,MVec.z);
+ Nvec:=level.Sectors[JedMain.Cur_SC].surfaces[JedMain.Cur_SF].normal;
+ PanMessage(mt_info,'Surface Center: '+Format('%.3f ',[Mvec.x])+Format('%.3f ',[Mvec.y])+Format('%.3f', [Mvec.z])
+   +', Surface Normal: '+Format('%.3f ',[Nvec.x])+Format('%.3f ',[Nvec.y])+Format('%.3f',[Nvec.z])
+   +', V: '+Format('%d',[level.Sectors[JedMain.Cur_SC].surfaces[JedMain.Cur_SF].Vertices.Count]));
+
 end;
 
 procedure TSurfaceTools.Inset_ButtonClick(Sender: TObject);
 begin
- InsetSurface(level.Sectors[JedMain.Cur_SC].surfaces[JedMain.Cur_SF], 0.5, true,true,true);
+ InsetSurface(level.Sectors[JedMain.Cur_SC].surfaces[JedMain.Cur_SF], StrToFloat(inset_combobox.text), true,true,true);
 end;
 
 procedure TSurfaceTools.Move_UpDownClick(Sender: TObject; Button: TUDBtnType);
 var
  Down:Boolean;
 begin
- down:=False;
+ down:=true;
 
   case Button of
-     btPrev:  down:=true;
+     btPrev:  down:=false;
   end;
 
   NJEDMoveSurface(level.Sectors[JedMain.Cur_SC].surfaces[JedMain.Cur_SF], 0.1,down, true,true,true);

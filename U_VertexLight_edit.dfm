@@ -25,8 +25,6 @@ object VertexLight: TVertexLight
     Height = 62
     Align = alBottom
     TabOrder = 0
-    ExplicitTop = 376
-    ExplicitWidth = 245
     object BNSet: TButton
       Left = 80
       Top = 24
@@ -60,8 +58,6 @@ object VertexLight: TVertexLight
     Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goEditing, goAlwaysShowEditor]
     TabOrder = 1
     OnSelectCell = SGValuesSelectCell
-    ExplicitWidth = 854
-    ExplicitHeight = 756
     RowHeights = (
       20)
   end

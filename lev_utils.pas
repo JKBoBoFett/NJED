@@ -1597,28 +1597,41 @@ var
 surfnumverts,vxnum,i,n:integer;
 CVec:Tvector;
 v:TJKVertex;
+nvx:TJKVertex;
 begin
+NJEDScaleSurface(surf, 0.001,true,true,true);
+{
 surfnumverts:=surf.Vertices.Count;
 NJEDCalcSurfCenter(surf,CVec.x,CVec.y,CVec.z);
 StartUndoRec('Collapse surface(s)');
 SaveSecUndo(surf.sector,ch_changed,sc_both);
+
+nvx:=surf.sector.NewVertex;
+nvx.x:=CVec.x;
+nvx.y:=CVec.y;
+nvx.z:=CVec.z;
+
+
 for i := surfnumverts - 1 downto (0) do
     begin
     vxnum:=Level.Sectors[JedMain.cur_sc].surfaces[JedMain.Cur_SF].vertices[i].num;
-
+      Level.Sectors[JedMain.cur_sc].Vertices[vxnum].Assign(nvx);
     //update vertex
-    v:=Level.Sectors[JedMain.cur_sc].Vertices[vxnum];
-    v.x:=CVec.x;
-    v.y:=CVec.y;
-    v.z:=CVec.z;
-    end;
-    surf.sector.surfaces.Delete(surf.num);
+//    v:=Level.Sectors[JedMain.cur_sc].Vertices[vxnum];
+//    v.x:=CVec.x;
+//    v.y:=CVec.y;
+//    v.z:=CVec.z;
+   end;
+   // surf.sector.surfaces.Delete(surf.num);
     SectorUpdate(JedMain.cur_sc);
-
+      
     for n := 0 to (Level.Sectors[JedMain.cur_sc].surfaces.count - 1) do
                    begin
                    SurfaceUpdate(JedMain.cur_sc,n,7);
+                    Level.Sectors[JedMain.cur_sc].surfaces[n].CalcNormal;
+
                    end;
+}
 end;
 
 Procedure NJEDMoveSurface(surf:TJKSurface; MoveFactor:double;down:boolean; XB,YB,ZB:boolean);
@@ -1652,13 +1665,13 @@ begin
     vz:=z;
 
     //if checkbox1.Checked then
-      vx:=dx;
+     if XB then vx:=dx;
 
      //if  checkbox2.Checked then
-       vy:=dy;
+     if YB then  vy:=dy;
 
      //if  checkbox3.Checked then
-       vz:=dz;
+     if ZB then vz:=dz;
 
     //update vertex
     v:=Level.Sectors[JedMain.cur_sc].Vertices[vxnum];

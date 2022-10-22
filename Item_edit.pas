@@ -946,6 +946,9 @@ begin
  BNPaste.Visible:=false;
  LBCogs.Items.Clear;
  LBText.Caption:='';
+
+ PNLight.Visible:=false;  //NJED
+ BNlight.Visible:=false;  //NJED
 end;
 
 procedure TItemEdit.FormActivate(Sender: TObject);

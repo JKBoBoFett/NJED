@@ -66,7 +66,7 @@ begin
  a3DO:=tmpthing.a3DO;
  tmpthing.a3DO:=nil;
  a3DO.Free;
- tmpthing.a3DO:=T3Do.CreateFrom3DO(name,0);
+ tmpthing.a3DO:=T3Do.CreateFrom3DO(name,true,0);
  tmpthing.YAW:=180;
  tmpthing.a3Do.GetBBox(box);
 

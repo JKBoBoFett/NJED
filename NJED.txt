@@ -1,10 +1,13 @@
 
 NJED V.971(2022):
-Added face flags, two sided,collides with other objects
-Fixed face flags being ignored on 3do import
-Added ability to Manually edit Surface Vertex light intensites
-Enabled Manual Edit of sector Ambient light (effects lighting on things)
-Added shortcuts: Snap Grid to Object 'Shift+S', Snap View to Object 'ALT+S', View to Grid 'Shift+Z', Grid to View 'Z'
+-Added face flags, two sided,collides with other objects
+-Fixed face flags being ignored on 3do import
+-Added ability to Manually edit Surface Vertex light intensites
+-Enabled Manual Edit of sector Ambient light (effects lighting on things)
+-Added shortcuts: Snap Grid to Object 'Shift+S', Snap View to Object 'ALT+S', View to Grid 'Shift+Z', Grid to View 'Z'
+-Improved 'save JKL and test': now gives a warning if project directory is not in 8:3 filename format. Will use inject.exe if found in game directory.
+-Added 'Surface Tools' from orignal plugin source code with small improvments. Has functions to Scale,collapse,move along normal,Inset on selected surfaces.
+-corrected pivot points on exported 3do's. Automatically sets correct insert offset on player models
 
 NJED V.97(2016):
 Added .obj import, imports geometry and UV coordinates. Tested with Milkshape 3D and Blender.
@@ -19,7 +22,7 @@ Improved OpenGL support. Now using dglOpenGL header, not the buggy default Delph
 Added 'thing limit' override option in the episode header editor 
 
 NJED V.96(2014):
-Ported Delphi 2 source to Borland Delphi 2006
+Ported Delphi 2 JED source to Borland Delphi 2006
 Removed CD checks
 Added Grid Dot Steps 0.001,0.005,0.05
 Added Grid Snap Steps 0.0005,0.001

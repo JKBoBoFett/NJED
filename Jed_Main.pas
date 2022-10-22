@@ -2945,8 +2945,13 @@ var a3DO:T3DO;
     face:T3DOFace;
     tv:TTXVertex;
     hnode:THNode;
+    ResetOffsets:boolean;
 begin
- a3DO:=T3DO.CreateFrom3DO(name,0);
+  ResetOffsets:=true;
+  //If MsgBox('Reset 3do node pivots and mesh offsets on import? ','I got a question',mb_YesNo)=idNo then ResetOffsets:=false;
+
+
+ a3DO:=T3DO.CreateFrom3DO(name,ResetOffsets,0);
  Level.Clear;
 try
  for i:=0 to a3DO.Meshes.count-1 do
@@ -3001,9 +3006,9 @@ begin
  hnode:=level.New3DONode;
  hnode.Assign(a3DO.hnodes[i]);
  level.h3donodes.Add(hnode);
- hnode.pivotx:=0;
- hnode.pivoty:=0;
- hnode.pivotz:=0;
+// hnode.pivotx:=0;
+// hnode.pivoty:=0;
+// hnode.pivotz:=0;
 end;
 
 finally
@@ -5405,6 +5410,8 @@ procedure TJedMain.SaveJKLGOBandTest1Click(Sender: TObject);
 var gobname,batname,ext:string;
     t:TextFile;
     pdir:array[0..255] of char;
+    prjdir,name:string;
+    pathL:integer;
 begin
  If MsgBox('You''re about to test your level. Proceed?','Warning',mb_YesNo)=idNo then exit;
 
@@ -5415,13 +5422,28 @@ begin
    begin
     if IsMots then ext:='jkm.exe' else ext:='jk.exe';
 
-    if Pos(' ',ProjectDir)=0 then StrLCopy(pdir,Pchar(ProjectDir),sizeof(pdir))
-    else GetShortPathName(pchar(ProjectDir),pdir,sizeof(pdir));
+    if FileExists(GameDir+'inject.exe') then ext:='inject.exe';
+
+    //if Pos(' ',ProjectDir)=0 then StrLCopy(pdir,Pchar(ProjectDir),sizeof(pdir))
+    //else
+     //GetShortPathName(pchar(ProjectDir),pdir,sizeof(pdir));
+      prjdir:=SysUtils.ExtractShortPathName(ProjectDir);
+
+      name:=ExtractFileName(ExcludeTrailingPathDelimiter(prjdir));
+      pathL:= length(name);
+
+      //NJed 10/22/22
+      if  (Pos(' ',prjdir)>0) or (pathL >8) then
+      begin
+        If MsgBox('Project path must be in 8:3 format.'+#13
+             +'Check if 8:3 filenames are enabled in project direcory with dos cmd dir /x.'+#13
+             +'Proceed?','Warning',mb_YesNo)=idNo then exit;
+      end;
 
     AssignFile(t,batname); Rewrite(t);
     Writeln(t,ExtractFileDrive(GameDir));
     Writeln(t,'cd "',GameDir,'"');
-    Writeln(t,ext,' -verbose 2 -windowgui -devmode -dispstats -debug log -displayconfig -path '+Pdir);
+    Writeln(t,ext,' -verbose 2 -windowgui -devmode -dispstats -debug log -displayconfig -path '+prjdir);
     CloseFile(t);
    end;
 

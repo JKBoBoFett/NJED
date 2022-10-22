@@ -73,6 +73,7 @@ procedure TVertexLight.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
  JedMain.SelectedSurfaceVertex:=0;
  JedMain.SurfaceVertexLightMode:=false;
+ JedMain.redraw;
 end;
 
 procedure TVertexLight.FormCreate(Sender: TObject);
