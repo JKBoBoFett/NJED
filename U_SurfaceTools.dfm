@@ -33,9 +33,9 @@ object SurfaceTools: TSurfaceTools
   end
   object Info_Button: TButton
     Left = 21
-    Top = 232
+    Top = 231
     Width = 99
-    Height = 17
+    Height = 23
     Caption = 'Pan Surface Info'
     TabOrder = 0
     OnClick = Info_ButtonClick

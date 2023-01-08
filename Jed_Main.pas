@@ -647,22 +647,64 @@ begin
 
  With Sec do
  begin
- surf:=NewSurface; sec.surfaces.Add(surf); surf.surfflags:=surf.surfflags or SF_Floor;
- Surf.AddVertex(vertices[0]);Surf.AddVertex(vertices[1]);Surf.AddVertex(vertices[2]);Surf.AddVertex(vertices[3]);
- surf:=NewSurface; sec.surfaces.Add(surf);
- Surf.AddVertex(vertices[4]);Surf.AddVertex(vertices[5]);Surf.AddVertex(vertices[6]);Surf.AddVertex(vertices[7]);
+ //surface 0
+ surf:=NewSurface;
+ sec.surfaces.Add(surf);
+ surf.surfflags:=surf.surfflags or SF_Floor;
+ Surf.AddVertex(vertices[0]);
+ Surf.AddVertex(vertices[1]);
+ Surf.AddVertex(vertices[2]);
+ Surf.AddVertex(vertices[3]);
 
- surf:=NewSurface; sec.surfaces.Add(surf);
- Surf.AddVertex(vertices[2]);Surf.AddVertex(vertices[6]);Surf.AddVertex(vertices[5]);Surf.AddVertex(vertices[3]);
+ //surface 1
+// #1:	72	0x4	0x4	4	3	1	-1	0	4 4,0 5,1 6,2 7,3 5 5 5 5
+//  1:	72	0x4	0x4	4	3	1	-1	0	4 5,1 6,2 7,3 4,0 5 5 5 5
+ surf:=NewSurface;
+ sec.surfaces.Add(surf);
+ Surf.AddVertex(vertices[5]);
+ Surf.AddVertex(vertices[6]);
+ Surf.AddVertex(vertices[7]);
+ Surf.AddVertex(vertices[4]);
 
- surf:=NewSurface; sec.surfaces.Add(surf);
- Surf.AddVertex(vertices[1]);Surf.AddVertex(vertices[7]);Surf.AddVertex(vertices[6]);Surf.AddVertex(vertices[2]);
+ //surface 2
+// #2:	72	0x4	0x4	4	3	1	-1	0	4 2,0 6,4 5,5 3,3 5 5 5 5
+//  2:	72	0x4	0x4	4	3	1	-1	0	4 5,5 3,3 2,0 6,4 5 5 5 5
+ surf:=NewSurface;
+ sec.surfaces.Add(surf);
+ Surf.AddVertex(vertices[5]);
+ Surf.AddVertex(vertices[3]);
+ Surf.AddVertex(vertices[2]);
+ Surf.AddVertex(vertices[6]);
 
- surf:=NewSurface; sec.surfaces.Add(surf);
- Surf.AddVertex(vertices[0]);Surf.AddVertex(vertices[4]);Surf.AddVertex(vertices[7]);Surf.AddVertex(vertices[1]);
+ //surface 3
+// #3:	72	0x4	0x4	4	3	1	-1	0	4 1,0 7,4 6,5 2,3 5 5 5 5
+//  3:	72	0x4	0x4	4	3	1	-1	0	4 6,5 2,3 1,0 7,4 5 5 5 5
+ surf:=NewSurface;
+ sec.surfaces.Add(surf);
+ Surf.AddVertex(vertices[6]);
+ Surf.AddVertex(vertices[2]);
+ Surf.AddVertex(vertices[1]);
+ Surf.AddVertex(vertices[7]);
 
- surf:=NewSurface; sec.surfaces.Add(surf);
- Surf.AddVertex(vertices[3]);Surf.AddVertex(vertices[5]);Surf.AddVertex(vertices[4]);Surf.AddVertex(vertices[0]);
+ //surface 4
+// #4:	72	0x4	0x4	4	3	1	-1	0	4 0,0 4,4 7,5 1,3 5 5 5 5
+//  4:	72	0x4	0x4	4	3	1	-1	0	4 7,5 1,3 0,0 4,4 5 5 5 5
+ surf:=NewSurface;
+ sec.surfaces.Add(surf);
+ Surf.AddVertex(vertices[7]);
+ Surf.AddVertex(vertices[1]);
+ Surf.AddVertex(vertices[0]);
+ Surf.AddVertex(vertices[4]);
+
+ //surface 5
+// #5:	72	0x4	0x4	4	3	1	-1	0	4 3,0 5,4 4,5 0,3 5 5 5 5
+//  5:	72	0x4	0x4	4	3	1	-1	0	4 4,5 0,3 3,0 5,4 5 5 5 5
+ surf:=NewSurface;
+ sec.surfaces.Add(surf);
+ Surf.AddVertex(vertices[4]);
+ Surf.AddVertex(vertices[0]);
+ Surf.AddVertex(vertices[3]);
+ Surf.AddVertex(vertices[5]);
  end;
 
  th:=Level.NewThing; Level.Things.Add(th);

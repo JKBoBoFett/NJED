@@ -101,7 +101,8 @@ uses
   U_ObjImportOptions in 'U_ObjImportOptions.pas' {objImportOptions},
   OBJ_export in 'OBJ_export.pas' {ObjExport},
   U_VertexLight_edit in 'U_VertexLight_edit.pas' {VertexLight},
-  U_SurfaceTools in 'U_SurfaceTools.pas' {SurfaceTools};
+  U_SurfaceTools in 'U_SurfaceTools.pas' {SurfaceTools},
+  UV_utils in 'UV_utils.pas';
 
 {$R *.RES}
 {$R Ver_info.res}
