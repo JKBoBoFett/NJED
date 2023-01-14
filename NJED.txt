@@ -1,4 +1,7 @@
 
+NJED V.972(14-JAN-2023):
+-changed shortcuts View to Grid to 'Shift+Q', Grid to View 'Q' as 'Z' created a conflict in 3d preview
+
 NJED V.971(2022):
 -Added face flags, two sided,collides with other objects
 -Fixed face flags being ignored on 3do import

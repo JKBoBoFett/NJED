@@ -19,7 +19,7 @@
 			<Compiler Name="A">1</Compiler>
 			<Compiler Name="B">0</Compiler>
 			<Compiler Name="C">0</Compiler>
-			<Compiler Name="D">1</Compiler>
+			<Compiler Name="D">0</Compiler>
 			<Compiler Name="E">0</Compiler>
 			<Compiler Name="F">0</Compiler>
 			<Compiler Name="G">1</Compiler>
@@ -110,7 +110,7 @@
 			<Linker Name="OutputObjs">0</Linker>
 			<Linker Name="GenerateHpps">False</Linker>
 			<Linker Name="ConsoleApp">1</Linker>
-			<Linker Name="DebugInfo">True</Linker>
+			<Linker Name="DebugInfo">False</Linker>
 			<Linker Name="RemoteSymbols">False</Linker>
 			<Linker Name="GenerateDRC">False</Linker>
 			<Linker Name="MinStackSize">16384</Linker>

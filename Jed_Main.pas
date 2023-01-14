@@ -1901,7 +1901,7 @@ begin
   Ord('N'): NextObject;
   Ord('P'): PreviousObject;
   Ord('U'): UseInCog;
-  Ord('Q'): LoadDLLPlugin('h:\rr\mv\mv.dll');
+ // Ord('Q'): LoadDLLPlugin('h:\rr\mv\mv.dll');
   Ord('M'): begin
             case Map_mode of
              MM_SC: begin
