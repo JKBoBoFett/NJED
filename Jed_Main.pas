@@ -1875,6 +1875,7 @@ begin
              MM_LT: BringLightToSurf(cur_LT,cur_SC,Cur_SF);
             end;
   VK_MULTIPLY: SetViewToGrid;
+  VK_DIVIDE: SetGridToView;
   Ord('E'): SetMapMode(MM_ED);
   Ord('X'): if map_mode=MM_SF then
             begin

@@ -6,7 +6,7 @@ uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls,
    Forms, Dialogs, D3D_Prender, J_Level, Geometry, StdCtrls,
    GlobalVars, Menus, OGL_Prender, Prender, Clipbrd,
-   d3d_NPrender, u_pj3dos;
+   d3d_NPrender, u_pj3dos, ComCtrls,math;
 
 type
   TCamPos=record
@@ -25,6 +25,9 @@ type
     miEdit: TMenuItem;
     miTex: TMenuItem;
     ToggleFullyLit1: TMenuItem;
+    StatusBar1: TStatusBar;
+    CB3DPStep: TComboBox;
+    CBMouseSens: TComboBox;
     procedure FormShow(Sender: TObject);
     procedure FormHide(Sender: TObject);
     procedure FormKeyDown(Sender: TObject; var Key: Word;
@@ -39,6 +42,18 @@ type
     procedure FormCreate(Sender: TObject);
     procedure SetViewcamera1Click(Sender: TObject);
     procedure ToggleFullyLit1Click(Sender: TObject);
+    procedure FormMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
+    procedure FormMouseDown(Sender: TObject; Button: TMouseButton;
+      Shift: TShiftState; X, Y: Integer);
+    procedure FormMouseLeave(Sender: TObject);
+    procedure FormMouseWheel(Sender: TObject; Shift: TShiftState;
+      WheelDelta: Integer; MousePos: TPoint; var Handled: Boolean);
+    procedure StatusBar1DrawPanel(StatusBar: TStatusBar; Panel: TStatusPanel;
+      const Rect: TRect);
+    procedure CB3DPStepExit(Sender: TObject);
+    procedure CB3DPStepChange(Sender: TObject);
+    procedure CBMouseSensChange(Sender: TObject);
+    procedure CBMouseSensExit(Sender: TObject);
   private
     { Private declarations }
    Render3D:TPreviewRender;
@@ -80,10 +95,13 @@ type
 
 var
   Preview3D: TPreview3D;
-
+  XDown, YDown, Zcoord,YLast,XLast,flymode: Integer;
+  MouseButton : Integer;
+  MouseS : double;
+  amountLast,yRollLast,xRollLast,zRollLast:double;
 implementation
 
-uses Jed_Main, U_Options, Misc_utils, Item_edit, U_tbar, ProgressDialog;
+uses Jed_Main, U_Options, Misc_utils, Item_edit, U_tbar, ProgressDialog,FieldEdit;
 
 {$R *.DFM}
 
@@ -171,6 +189,25 @@ begin
  end;
 end;
 
+procedure TPreview3D.StatusBar1DrawPanel(StatusBar: TStatusBar;
+  Panel: TStatusPanel; const Rect: TRect);
+begin
+if Panel = StatusBar1.Panels[2] then
+with CB3DPStep do begin
+Top := Rect.Top;
+Left := Rect.Left;
+//Width := Rect.Right - Rect.Left - ;
+//Height := Rect.Bottom - Rect.Top;
+end;
+if Panel = StatusBar1.Panels[3] then
+with CBMouseSens do begin
+Top := Rect.Top;
+Left := Rect.Left;
+//Width := Rect.Right - Rect.Left - ;
+//Height := Rect.Bottom - Rect.Top;
+end;
+end;
+
 procedure TPreview3D.FormShow(Sender: TObject);
 begin
   case P3DAPI of
@@ -255,19 +292,40 @@ begin
             CamX:=CamX-sin(YAW/180*PI)*P3DStep;
             CamY:=CamY-cos(YAW/180*PI)*P3DStep;
            end;
-  VK_NEXT: if PCH>=-80 then PCH:=PCH-10;
-  VK_PRIOR: if PCH<=80 then PCH:=PCH+10;
+  VK_NEXT: if PCH>=-89 then PCH:=PCH-10;
+  VK_PRIOR: if PCH<=89 then PCH:=PCH+10;
   VK_HOME: if Shift=[] then PCH:=0
            else JedMain.StraightenTexture(ssCtrl in shift,ssShift in shift);
-
-  Ord('A'): if shift=[ssCtrl] then JedMain.FormKeyDown(nil,Key,[]) else
+  Ord('W'): if MouseButton >= 2 then  //NJED
+            begin
+            // The right mouse button is held down.
+            CamX:=CamX+sin(YAW/180*PI)*P3DStep/8;
+            CamY:=CamY+cos(YAW/180*PI)*P3DStep/8;
+            end;
+  Ord('A'): if MouseButton >= 2 then  //NJED
+              begin
+              // The right mouse button is held down.
+              CamY:=CamY+sin(YAW/180*PI)*P3DStep/8;
+              CamX:=CamX-cos(YAW/180*PI)*P3DStep/8;
+              end
+            else if shift=[ssCtrl] then JedMain.FormKeyDown(nil,Key,[]) else
             if (shift=[ssAlt]) or (shift=[ssShift]) then JedMain.FormKeyDown(nil,Key,shift)
             else CamZ:=CamZ+P3DStep;
+
+
+  
+  Ord('D'): if MouseButton >= 2 then  //NJED
+              begin
+              // The right mouse button is held down.
+              CamY:=CamY-sin(YAW/180*PI)*P3DStep/8;
+              CamX:=CamX+cos(YAW/180*PI)*P3DStep/8;
+              end;
+
   Ord('I'): if shift=[] then JedMain.AddThingAtSurf else
             if shift=[ssShift] then JedMain.AddThingAtXYZPYR(CamX,CamY,CamZ,-PCH,360-YAW,0.0) else
             JedMain.FormKeyDown(nil,Key,shift);
-
-  Ord('Z'): CamZ:=CamZ-P3DStep;
+  Ord('Q'): CamZ:=CamZ+P3DStep/8; //NJED
+  Ord('Z'): CamZ:=CamZ-P3DStep/8;
   Ord('N'): GotoWPlayer(cwPlayer+1,1);
   Ord('P'): if Shift=[ssCtrl] then JedMain.FormKeyDown(nil,Key,shift) else GotoWPlayer(cwPlayer-1,-1);
   {<}  188: if shift=[ssShift] then JedMain.ShiftTexture(st_up)
@@ -284,15 +342,40 @@ begin
   {'}  222: JedMain.DoStitch;
   {/}  191: JedMain.StraightenTexture(ssCtrl in shift,ssShift in shift);
 
-  Ord('S'): if (shift=[ssShift]) or (shift=[]) then JedMain.FormKeyDown(nil,Key,shift);
+  Ord('S'): begin
+             if MouseButton >= 2 then  //NJED
+              begin
+              // The right mouse button is held down.
+              CamX:=CamX-sin(YAW/180*PI)*P3DStep/8;
+              CamY:=CamY-cos(YAW/180*PI)*P3DStep/8;
+              end
+
+            else if (shift=[ssShift]) or (shift=[]) then
+              begin
+              JedMain.FormKeyDown(nil,Key,shift);
+              end;
+            end;
   VK_DELETE: if (shift=[ssAlt]) or (shift=[]) then JedMain.FormKeyDown(nil,Key,shift);
   Ord('X'),219,221,VK_Return: if Shift=[] then JedMain.FormKeyDown(nil,Key,shift);
   Ord('F'): if Shift=[] Then
-            begin
-             clipboard.AsText:=
-             Sprintf('(%.5f/%.5f/%.5f:%.5f/%.5f/%.5f)',
-             [CamX,CamY,CamZ,-PCH,360-YAW,0.0]);
-            end;
+             begin
+              clipboard.AsText:=
+              Sprintf('(%.5f/%.5f/%.5f:%.5f/%.5f/%.5f)',
+              [CamX,CamY,CamZ,-PCH,360-YAW,0.0])
+             end
+            else if ssShift in shift then
+              begin
+              if flymode <> 1 then
+               begin
+               flymode:=1;
+               StatusBar1.Panels.Items[0].Text:='flymode on';
+               end
+              else
+               begin
+               flymode:=0;
+               StatusBar1.Panels.Items[0].Text:='flymode off';
+               end;
+              end;
 
   else exit;
  end;
@@ -466,6 +549,8 @@ procedure TPreview3D.FormPaint(Sender: TObject);
 begin
  ApplyChanges;
  Render3d.redraw;
+
+ StatusBar1.Panels.Items[1].Text:= 'CAM: '+FloatToStr(JKRound(Render3D.CamX))+', '+FloatToStr(JKRound(Render3D.CamY))+', '+FloatToStr(JKRound(Render3D.CamZ)) ;
 end;
 
 Function TPreview3D.IsActive:boolean;
@@ -484,6 +569,33 @@ begin
  Invalidate;
 end;
 
+
+procedure TPreview3D.CB3DPStepChange(Sender: TObject);
+var ad:double;
+    valid:boolean;
+begin
+ valid:=feValDouble(CB3DPStep.Text,ad);
+// CBValDouble(CB3DPStep,P3DStep,0.001,5);
+if valid then P3DStep:=ad;
+
+ ActiveControl:=nil; 
+end;
+
+procedure TPreview3D.CB3DPStepExit(Sender: TObject);
+begin
+ ActiveControl:=nil;
+end;
+
+procedure TPreview3D.CBMouseSensChange(Sender: TObject);
+begin
+ MouseS:=strtofloat(CBMouseSens.text);
+ ActiveControl:=nil;
+end;
+
+procedure TPreview3D.CBMouseSensExit(Sender: TObject);
+begin
+ ActiveControl:=nil;
+end;
 
 procedure TPreview3D.Close1Click(Sender: TObject);
 begin
@@ -521,11 +633,201 @@ begin
  end;
 end;
 
+procedure TPreview3D.FormMouseDown(Sender: TObject; Button: TMouseButton;
+  Shift: TShiftState; X, Y: Integer);
+begin
+  Preview3D.SetFocus;
+  XDown := X;
+  YDown := Y;
+  YLast := Y;
+  if Button = mbLeft  then
+  begin
+    MouseButton :=1;
+  end;
+  if Button = mbRight then
+  begin
+  MouseButton :=2;
+  if ssctrl in shift then MouseButton :=4;
+  if ssAlt in shift then MouseButton :=5;
+  if ssShift in shift then MouseButton :=7;
+  if (ssctrl in shift) and (ssAlt in shift) then MouseButton :=6;
+  end;
+ if Button = mbMiddle then
+  begin
+  //MouseButton :=3;
+  end;
+end;
+
+procedure TPreview3D.FormMouseLeave(Sender: TObject);
+begin
+ MouseButton :=0;
+end;
+
+//NJED 14-JAN-2023
+procedure TPreview3D.FormMouseMove(Sender: TObject; Shift: TShiftState; X,
+  Y: Integer);
+var
+direction:string;
+camstep:double;
+pchyawStep:double;
+begin
+
+if MouseButton <> 0 then
+begin
+camstep:=(0.0125)*MouseS;
+pchyawStep:=1*MouseS;
+end;
+
+  //right mouse with shift fly mode
+ if (MouseButton = 7) then
+  begin
+   if Y < Ylast then
+    begin
+    //direction:='up';
+    Render3d.CamZ:=Render3d.CamZ+camstep;
+    end;
+   if Y > Ylast then
+    begin
+     //direction:='down';
+     Render3d.CamZ:=Render3d.CamZ-camstep;
+    end;
+   if (X < Xlast) then
+     begin
+     //direction:='left';
+     Render3D.YAW:=Render3D.YAW-pchyawStep;
+     end;
+   if (X > Xlast) then
+     begin
+     //direction:='right';
+     Render3D.YAW:=Render3D.YAW+pchyawStep;
+     end;
+  //invalidate;
+  // exit;
+  end;
+
+ //right mouse button (mouselook)
+ if MouseButton = 2 then
+  begin
+
+   if Y < Ylast then
+    begin
+     //direction:='up';
+     if InvertMouselookY then
+       begin
+        if Render3D.PCH>=-89 then  Render3D.PCH:=Render3D.PCH-pchyawStep;
+       end
+     else
+       begin
+        if Render3D.PCH<=89 then Render3D.PCH:=Render3D.PCH+pchyawStep;
+       end;
+    end;
+
+   if Y > Ylast then
+    begin
+     //direction:='down';
+     if InvertMouselookY then
+      begin
+       if Render3D.PCH<=89 then  Render3D.PCH:=Render3D.PCH+pchyawStep;
+      end
+     else
+      begin
+       if Render3D.PCH>=-89 then Render3D.PCH:=Render3D.PCH-pchyawStep;
+      end;
+    end;
+
+    if X < Xlast then
+     begin
+     //direction:='left';
+     Render3D.YAW:=Render3D.YAW-pchyawStep;
+     //X:=Xdown
+     end;
+
+    if X > Xlast then
+     begin
+     //direction:='right';
+     Render3D.YAW:=Render3D.YAW+pchyawStep;
+     //X:=Xdown;
+     end;
+
+  end;
+
+ // right mouse button and alt  (pan right and left / forward and back)
+ if (MouseButton = 5) then
+  begin
+  if Y < Ylast then
+    begin
+    //direction:='up';
+    Render3d.CamX:=Render3d.CamX+sin(Render3d.YAW/180*PI)*camstep;
+    Render3d.CamY:=Render3d.CamY+cos(Render3d.YAW/180*PI)*camstep;
+    end;
+ if Y > Ylast then
+    begin
+    //direction:='down';
+    Render3d.CamX:=Render3d.CamX-sin(Render3d.YAW/180*PI)*camstep;
+    Render3d.CamY:=Render3d.CamY-cos(Render3d.YAW/180*PI)*camstep;
+    end;
+
+  if X < Xlast then
+     begin
+     //direction:='left';
+     Render3d.CamY:=Render3d.CamY+sin(Render3d.YAW/180*PI)*camstep;
+     Render3d.CamX:=Render3d.CamX-cos(Render3d.YAW/180*PI)*camstep;
+     end;
+
+    if X > Xlast then
+     begin
+     //direction:='right';
+     Render3d.CamY:=Render3d.CamY-sin(Render3d.YAW/180*PI)*camstep;
+     Render3d.CamX:=Render3d.CamX+cos(Render3d.YAW/180*PI)*camstep;
+     end;
+  end;
+
+ //right mouse button with Ctrl (pan right and left /up and down)
+ if MouseButton = 4 then
+  begin
+   if Y < Ylast then
+    begin
+    //direction:='up';
+    Render3d.CamZ:=Render3d.CamZ+camstep;
+    end;
+ if Y > Ylast then
+    begin
+    // direction:='down';
+    Render3d.CamZ:=Render3d.CamZ-camstep;
+    end;
+
+  if X < Xlast then
+     begin
+     //direction:='left';
+     Render3d.CamY:=Render3d.CamY+sin(Render3d.YAW/180*PI)*camstep;
+     Render3d.CamX:=Render3d.CamX-cos(Render3d.YAW/180*PI)*camstep;
+     end;
+
+    if X > Xlast then
+     begin
+     //direction:='right';
+     Render3d.CamY:=Render3d.CamY-sin(Render3d.YAW/180*PI)*camstep;
+     Render3d.CamX:=Render3d.CamX+cos(Render3d.YAW/180*PI)*camstep;
+     end;
+  end;
+
+ YLast := Y;
+ XLast := X;
+
+ if MouseButton <> 0 then Invalidate;
+
+//StatusBar1.Panels.Items[0].Text:= FloatToStr(pchyawStep)+' '+FloatToStr(camStep)+direction+', ';
+StatusBar1.Panels.Items[0].Text:= FloatToStr(Render3D.PCH)+', '+FloatToStr(Render3D.YAW);
+end;
+
 procedure TPreview3D.FormMouseUp(Sender: TObject; Button: TMouseButton;
   Shift: TShiftState; X, Y: Integer);
 var
     i,f:integer;
 begin
+  //NJED
+ if MouseButton = 1 then
+ begin
  if Render3D=nil then exit;
  With Render3D do
  Case PickAt(X,Y) of
@@ -556,6 +858,37 @@ begin
  end;
 end;
 
+  MouseButton :=0;
+end;
+
+procedure TPreview3D.FormMouseWheel(Sender: TObject; Shift: TShiftState;
+  WheelDelta: Integer; MousePos: TPoint; var Handled: Boolean);
+begin
+//mousewheel (move forward and back)
+//Ctrl + mousewheel (move up and down)
+if sign(WheelDelta) = 1 then
+  begin
+  if ssCtrl in shift then Render3D.CamZ:=Render3D.CamZ+P3DStep/8;
+  if shift=[] then
+   begin
+    Render3D.CamX:=Render3D.CamX+sin(Render3D.YAW/180*PI)*P3DStep/8;
+    Render3D.CamY:=Render3D.CamY+cos(Render3D.YAW/180*PI)*P3DStep/8;
+   end;
+  end;
+
+  if sign(WheelDelta) = -1 then
+  begin
+  if ssCtrl in shift then Render3D.CamZ:=Render3D.CamZ-P3DStep/8;
+  if shift=[] then
+   begin
+    Render3D.CamX:=Render3D.CamX-sin(Render3D.YAW/180*PI)*P3DStep/8;
+    Render3D.CamY:=Render3D.CamY-cos(Render3D.YAW/180*PI)*P3DStep/8;
+   end;
+  end;
+
+  invalidate;
+end;
+
 procedure TPreview3D.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
  P3dOnTop:=GetStayOnTop(self);
@@ -571,6 +904,8 @@ begin
 end;
 
 procedure TPreview3D.FormCreate(Sender: TObject);
+var
+CB3DPStepStyle: integer;
 begin
  scs:=TStringList.Create;
  ths:=TStringList.Create;
@@ -642,7 +977,15 @@ begin
  AddKBItem(miEdit,'Insert thing at surface','I',[]);
  AddKBItem(miEdit,'Insert thing at camera','I',[ssShift]);
 
-
+ CB3DPStep.Parent:=StatusBar1;
+ CBMouseSens.Parent:=StatusBar1;
+ MouseS:=1;
+ amountLast:=0;
+ yRollLast:=0;
+ xRollLast:=0;
+ zRollLast:=0;
+ YLast := 0;
+ XLast := 0;
 end;
 
 procedure TPreview3D.SetViewcamera1Click(Sender: TObject);

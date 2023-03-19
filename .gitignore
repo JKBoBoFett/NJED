@@ -4,6 +4,7 @@
 /*.drc
 /*.~pa
 /*.dll
+/FastMM4
 /d3d
 /Jeddata
 /plugins
@@ -19,3 +20,5 @@
 /REGSTR.PAS
 /dxtools.pas
 /MemCheck.pas
+/NJed_MemoryManager_EventLog.txt
+/notes.txt

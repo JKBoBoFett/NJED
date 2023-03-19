@@ -25,7 +25,7 @@ Type
 
 Const
      MaxMsgs=500;
-     JedVerNum='0.971';
+     JedVerNum='0.973';
      JedVersion:string=JedVerNum+' beta';
      LECLogo:String=
 '................................'#13#10+
@@ -172,6 +172,7 @@ Var
 
  NewOnFloor:Boolean=false;
  UndoEnabled:boolean=true;
+ InvertMouselookY:boolean=true;
  MoveFrames:boolean=true;
  GOBSmart:boolean=false;
  CheckOverlaps:boolean=false;

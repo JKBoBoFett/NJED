@@ -469,7 +469,7 @@ end;
 Procedure CBValDouble(cb:TComboBox;var d:double;min,max:double);
 var ad:double;
     valid:boolean;
-    oldp:TNotifyEvent;
+   // oldp:TNotifyEvent;
 begin
  valid:=feValDouble(cb.Text,ad);
  if (valid) and (ad>=min) and (ad<=max) then d:=ad else exit;

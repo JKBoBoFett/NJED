@@ -11,6 +11,9 @@ program NJed;
 {%File 'obj_import.inc'}
 
 uses
+ // FastMM4 in 'FastMM4\FastMM4.pas',
+ // FastMM4Messages in 'FastMM4\FastMM4Messages.pas',
+  Windows,
   Forms,
   Jed_Main in 'Jed_Main.pas' {JedMain},
   tmp_load3do in 'tmp_load3do.pas',
@@ -102,11 +105,22 @@ uses
   OBJ_export in 'OBJ_export.pas' {ObjExport},
   U_VertexLight_edit in 'U_VertexLight_edit.pas' {VertexLight},
   U_SurfaceTools in 'U_SurfaceTools.pas' {SurfaceTools},
-  UV_utils in 'UV_utils.pas';
+  UV_utils in 'UV_utils.pas',
+  MatThumbNails in 'MatThumbNails.pas' {frmThumbNails},
+  GameImageList in 'GameImageList.pas',
+  U_MatToBmpThread in 'U_MatToBmpThread.pas';
 
 {$R *.RES}
 {$R Ver_info.res}
+
+
+{$SETPEFLAGS IMAGE_FILE_LARGE_ADDRESS_AWARE
+	          or IMAGE_FILE_RELOCS_STRIPPED}
 begin
+
+
+//  {$INCLUDE FastMM4\FastMM4Options.inc}
+
   Application.Initialize;
   Application.Title := 'NJED';
   Application.CreateForm(TJedMain, JedMain);
@@ -144,5 +158,6 @@ begin
   Application.CreateForm(TObjExport, ObjExport);
   Application.CreateForm(TVertexLight, VertexLight);
   Application.CreateForm(TSurfaceTools, SurfaceTools);
+  Application.CreateForm(TfrmThumbNails, frmThumbNails);
   Application.Run;
 end.
