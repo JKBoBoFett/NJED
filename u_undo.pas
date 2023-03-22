@@ -282,8 +282,6 @@ begin
  nodechanges.Free;
 end;
 
-
-
 Function GetSecRecSize:Integer;
 begin
  result:=sizeof(TSecRec);
