@@ -395,7 +395,7 @@ var i:integer;
 begin
  AssignFile(t,name);
  Rewrite(t);
- WriteFmt('"%s"',[episode_name]);
+ WriteFmt('"%s"',[ANSIstring(episode_name)]);  //NJED 09/02/22
  Writeln(t);
  WriteFmt('TYPE %d',[game_type]);
  Writeln(t);
@@ -406,7 +406,7 @@ begin
  for i:=0 to recs.count-1 do
  With TJKRec(recs[i]) do
  begin
-  WriteFmt('%d:'#9'%d'#9'%d'#9'%s'#9'%s'#9'%d'#9'%d'#9'%d'#9'%d',[lnum,cdnum,levnum,ltype,fname,lpow,dpow,gotoA,gotoB]);
+  WriteFmt('%d:'#9'%d'#9'%d'#9'%s'#9'%s'#9'%d'#9'%d'#9'%d'#9'%d',[lnum,cdnum,levnum,ANSIstring(ltype),ANSIstring(fname),lpow,dpow,gotoA,gotoB]);   //NJED 09/02/22
  end;
  Writeln(t);
  Writeln(t,'end');

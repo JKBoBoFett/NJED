@@ -25,7 +25,7 @@ Type
 
 Const
      MaxMsgs=500;
-     JedVerNum='0.973';
+     JedVerNum='0.971';
      JedVersion:string=JedVerNum+' beta';
      LECLogo:String=
 '................................'#13#10+
@@ -172,7 +172,6 @@ Var
 
  NewOnFloor:Boolean=false;
  UndoEnabled:boolean=true;
- InvertMouselookY:boolean=true;
  MoveFrames:boolean=true;
  GOBSmart:boolean=false;
  CheckOverlaps:boolean=false;
@@ -293,6 +292,6 @@ end;
 Initialization
 begin
  BaseDir:=ExtractFilePath(Paramstr(0));
- DecimalSeparator:='.';
+ FormatSettings.DecimalSeparator:='.';   // njed 8/22
 end;
 end.

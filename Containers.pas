@@ -4,8 +4,9 @@ interface
 Uses Files, Classes, SysUtils;
 Type
 
+//Dark Forces GOB files
 TGOBheader=packed record
-            magic:array[0..3] of char;
+      magic:array[0..3] of ANSIchar; //NJED
 	    index_ofs:longint;
 	   end;
 
@@ -14,13 +15,13 @@ TNEntries=longint;
 TGOBEntry=packed record
 	 offs:longint;
 	 size:longint;
-	 name:array[0..12] of char;
+	 name:array[0..12] of ANSIchar; //NJED
 	end;
 
 
  TLFDentry=packed record
-	 tag:array[0..3] of char;
-	 name:array[0..7] of char;
+	 tag:array[0..3] of ANSIchar;
+	 name:array[0..7] of ANSIchar;
 	 size:longint;
 	end;
 
@@ -99,7 +100,7 @@ Function GetLABResType(const Name:String):TResType;
 
 Type
 Wad_index=packed record
- magic:array[0..3] of char;
+ magic:array[0..3] of ANSIchar;
  nentries:longint;
  pdirectory: longint;
 end;
@@ -111,14 +112,14 @@ end;
 
 {GOB2 declarations}
 TGOB2Header=record
- Magic:array[0..3] of char; {='GOB'#20}
+ Magic:array[0..3] of ANSIchar; {='GOB'#20}
  Long1,long2:longint; { $14, $C}
  NEntries:longint;
 end;
 
 TGOB2Entry=record
  Pos,size:longint;
- name:array[0..127] of char;
+ name:array[0..127] of ANSIchar;   //njed 8/21/22
 end;
 
 TGOB2Directory=class(TContainerFile)
@@ -203,27 +204,30 @@ Inherited Destroy;
 end;
 
 
-Procedure TGOBDirectory.Refresh;
+Procedure TGOBDirectory.Refresh;    //DF GOB file
 var Fi:TFInfo;
     i:integer;
     ge:TGobEntry;
     gn:TNEntries;
     f:TFile;
-begin
+  begin
  ClearIndex;
  f:=OpenFileRead(name,0);
 Try
  F.FRead(gh,sizeof(gh));
- if gh.magic<>'GOB'#10 then raise Exception.Create(Name+' is not a GOB file');
- F.FSeek(gh.index_ofs);
+
+ if gh.magic<>'GOB'#10 then raise Exception.Create(Name+' is not a GOB file');   // njed 8/22
+
+F.FSeek(gh.index_ofs);
  F.FRead(gn,sizeof(gn));
+
  for i:=0 to gn-1 do
  begin
   F.FRead(ge,sizeof(ge));
   fi:=TFInfo.Create;
   fi.offs:=ge.offs;
   fi.size:=ge.size;
-  Files.AddObject(ge.name,fi);
+  Files.AddObject(ANSIstring(ge.name),fi);   //NJED 09/19/22
  end;
 Finally
  F.FClose;
@@ -245,8 +249,8 @@ end;}
 
 Procedure TFLDDirectory.Refresh;
 var Le:TLFDEntry;
-    N:array[0..12] of char;
-    E:array[0..5] of char;
+    N:array[0..12] of ANSIchar;
+    E:array[0..5] of ANSIchar;
     fi:TFInfo;
     f:TFile;
 begin
@@ -262,7 +266,7 @@ begin
   Fi.offs:=F.FPos;
   fi.size:=le.size;
   Fi.offs:=F.Fpos;
-  Files.AddObject(Concat(n,'.',e),fi);
+  Files.AddObject(Concat(string(n),'.',string(e)),fi);    //njed 8/22
   F.Fseek(F.Fpos+le.size);
  end;
 Finally
@@ -278,7 +282,7 @@ end;
 Procedure TLFDCreator.PrepareHeader(newfiles:TStringList);
 var i:Integer;
     pe:^TLFDEntry;
-    name,ext:string;
+    name,ext:ANSIstring;
 begin
  pes:=TList.Create;
  cf.FSeek(sizeof(TLFDEntry)*newfiles.count+sizeof(TLFDEntry));
@@ -289,8 +293,8 @@ begin
   ext:=ExtractExt(name);
   Delete(Ext,1,1);
   SetLength(Name,length(Name)-5);
-  StrMove(Pe^.Name,Pchar(Name),8);
-  StrMove(pe^.tag,Pchar(Ext),4);
+  StrMove(Pe^.Name,PANSIchar(Name),8);
+  StrMove(pe^.tag,PANSIchar(Ext),4);
   pe^.size:=0;
   pes.Add(pe);
  end;
@@ -779,7 +783,7 @@ Try
   fi:=TFInfo.Create;
   fi.offs:=ge.pos;
   fi.size:=ge.size;
-  Files.AddObject(ge.name,fi);
+  Files.AddObject(ansistring(ge.name),fi);
   Dir:=ExtractFilePath(ge.name);
   if dir<>'' then
   begin

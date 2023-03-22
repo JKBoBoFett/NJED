@@ -111,20 +111,20 @@ var t:textfile;
 
 Procedure WriteFmt(const fmt:string;vals:array of const);
 begin
- Writeln(t,Sprintf(fmt,vals));
+ Writeln(t,Sprintf(fmt,vals ) );
 end;
 
 Procedure WriteS(const s:string);
 begin
- Writeln(t,s);
+ Writeln(t,ANSIstring(s) );      //NJED 09/02/22
 end;
 
 Procedure WriteListSection(const Name,cntName:String;ls:TStringList);
 var i:integer;
 begin
  WriteS(Name);
- WriteFmt('%s %d',[CntName,ls.count]);
- For i:=0 to ls.count-1 do WriteFmt('%d: %s',[i,ls[i]]);
+ WriteFmt('%s %d',[ANSIstring(CntName),ls.count]);   //NJED 09/02/22
+ For i:=0 to ls.count-1 do WriteFmt('%d: %s',[i, ANSIstring(ls[i]) ]); //NJED 09/01/22
  WriteS('end');
  WriteS('');
 end;
@@ -662,7 +662,7 @@ begin
   if (Flags and $1000)<>0 then With CBox do
     WriteFmt('COLLIDEBOX %.6f %.6f %.6f %.6f %.6f %.6f',[X1,Y1,Z1,X2,Y2,Z2]);
 
-  if Sound<>'' then WriteFmt('SOUND %s %.6f',[Sound,Snd_vol]);
+  if Sound<>'' then WriteFmt('SOUND %s %.6f',[ANSIstring(Sound),Snd_vol]); //NJED 09/02/22
   WriteFmt('CENTER %.6f %.6f %.6f',[CX,CY,CZ]);
   WriteFmt('RADIUS %.6f',[rad]);
 
@@ -780,7 +780,7 @@ begin
  With Things[i] do
  begin
   if Sec=nil then snum:=-1 else snum:=Sec.Num;
-  s:=Sprintf('%d: %s %s %.6f %.6f %.6f %.6f %.6f %.6f %d',[i,LowerCase(Name),LowerCase(Name),X,Y,Z,PCH,YAW,ROL,SNum]);
+  s:=Sprintf('%d: %s %s %.6f %.6f %.6f %.6f %.6f %.6f %d',[i,ANSIstring(LowerCase(Name)),ANSIstring(LowerCase(Name)),X,Y,Z,PCH,YAW,ROL,SNum]);  //NJED 09/03/22
   if mots then s:=s+' -1';
   for j:=0 to Vals.Count-1 do
   begin
@@ -858,13 +858,13 @@ begin {SaveToJKL}
 
   WriteS('SECTION: MATERIALS');
   WriteFmt('World materials %d',[UsedMats.Count]);
-  For i:=0 to UsedMats.Count-1 do WriteFmt('%d: %s %.6f %.6f',[i,UsedMats[i],1.0,1.0]);
+  For i:=0 to UsedMats.Count-1 do WriteFmt('%d: %s %.6f %.6f',[i,ANSIstring(UsedMats[i]),1.0,1.0]);   //NJED 09/02/22
   WriteS('end');
   WriteS('');
 
   WriteS('SECTION: GEORESOURCE');
   WriteFmt('World Colormaps %d',[UsedCmps.Count]);
-  For i:=0 to UsedCmps.Count-1 do WriteFmt('%d: %s',[i,UsedCmps[i]]);
+  For i:=0 to UsedCmps.Count-1 do WriteFmt('%d: %s',[i,ANSIstring(UsedCmps[i])]); //NJED 09/02/22
   WriteS('');
   WriteGeometry;
   WriteS('');

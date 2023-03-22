@@ -1,5 +1,11 @@
 unit u_undo;
 
+{
+notes:
+cogs are not restored to things after being deleted and undo
+
+}
+
 interface
 
 uses J_Level, SysUtils, Classes, GlobalVars, values, u_3dos;
@@ -36,7 +42,7 @@ Type
  PSFVX=^TSFVX;
 
  PSecRec=^TSecRec;
- TSecRec=record
+ TSecRec= record
   Flags:longint;
   Ambient:single;
   extra:single;
@@ -50,7 +56,7 @@ Type
 
  PSurfRec=^TSurfRec;
 
- TSurfRec=record
+ TSurfRec= record
   AdjSC,AdjSF:SmallInt;
   AdjoinFlags:Longint;
   Material:array[0..47] of char;
@@ -79,7 +85,7 @@ TThingRec=record
  X,Y,Z:double;
  PCH,YAW,ROL:Double;
  layer:SmallInt;
- vals:array[0..0] of char;
+ vals:array[0..0] of ANSIchar;  //NJED
 end;
 
 
@@ -119,8 +125,8 @@ Function GetThing(thing:TJKThing;trec:PThingRec):integer;
 Function SetThing(thing:TJKThing;trec:PThingRec):integer;
 
 Function GetThingValSize(thing:TJKThing):integer;
-Function getThingVals(thing:TJKThing;pvals:Pchar):integer;
-Function SetThingVals(thing:TJKThing;pvals:Pchar):integer;
+Function getThingVals(thing:TJKThing;pvals:PANSIchar):integer;
+Function SetThingVals(thing:TJKThing;pvals:PANSIchar):integer;
 
 Function GetCOGRecRecSize:integer;
 Procedure GetCOG(cog:TCog;var crec:TCogRec);
@@ -153,6 +159,7 @@ Type
 TUndoChange=class
  change:integer; {ch_ constants}
  data:pointer; {undo data}
+  buffer : array of byte;
  Procedure SaveUndo(obj:TObject;ch:integer);virtual;abstract;
  procedure Undo(objid:Integer);virtual;abstract;
  Destructor Destroy;override;
@@ -209,8 +216,6 @@ end;
   Constructor Create;
   Destructor Destroy;override;
  end;
-
-
 
 var
   UndoStack:TList;
@@ -281,8 +286,6 @@ begin
  scgchanges.Free;
  nodechanges.Free;
 end;
-
-
 
 Function GetSecRecSize:Integer;
 begin
@@ -535,22 +538,22 @@ begin
  end;
 end;
 
-Function getThingVals(thing:TJKThing;pvals:Pchar):integer;
-var st:string;
+Function getThingVals(thing:TJKThing;pvals:PANSIchar):integer;
+var st:ANSIstring; //NJED
     i:integer;
 begin
   st:='';
   for i:=0 to thing.vals.count-1 do
   With thing.vals[i] do
   begin
-   if st='' then st:=ConCat(name,'=',AsString) else
-                st:=ConCat(st,#32,name,'=',AsString);
+   if st='' then st:=ConCat(name,'=',ansistring(AsString)) else
+                st:=ConCat(st,#32,name,'=',ansistring(AsString));
   end;
-  StrCopy(pvals,pchar(st));
+  StrCopy(pvals,pANSIchar(st));
  result:=length(st);
 end;
 
-Function SetThingVals(thing:TJKThing;pvals:Pchar):integer;
+Function SetThingVals(thing:TJKThing;pvals:PANSIchar):integer;
 var
     n,p:integer;
     v:TTPLValue;
@@ -741,17 +744,27 @@ end;
 
 Procedure TSecValUndo.SaveUndo(obj:TObject;ch:integer);
 var sec:TJKSector;
-    pd:pchar;
-    i:integer;
+    pd:pANSIchar; //NJED
+    i,secSize,surSize:integer;
+
 begin
+
  change:=ch;
  if (ch<>ch_changed) and (ch<>ch_deleted) then exit;
  sec:=TJKSector(obj);
+
  nsfs:=sec.surfaces.count;
- GetMem(Data,GetSecRecSize+GetSurfRecSize*nsfs);
+
+ secSize:=GetSecRecSize;
+ surSize:=GetSurfRecSize*nsfs;
+
+ GetMem(Data,GetSecRecSize+(GetSurfRecSize*nsfs));
+
  pd:=Data;
- GetSec(sec,PSecRec(pd)^);
- inc(pd,GetSecRecSize);
+
+GetSec(sec,PSecRec(pd)^);
+
+inc(pd,GetSecRecSize);
  for i:=0 to sec.surfaces.count-1 do
  begin
   GetSurf(sec.surfaces[i],PSurfRec(pd)^);
@@ -762,7 +775,7 @@ end;
 
 procedure TSecValUndo.Undo(objid:Integer);
 var sec:TJKSector;
-    pd:pchar;
+    pd:pANSIchar;
     i,n:integer;
 
 Procedure ResolveRefs;
@@ -832,12 +845,10 @@ begin
 
 end;
 
-
-
 Procedure TSecGeoUndo.SaveUndo(obj:TObject;ch:integer);
 type
     pword=^word;
-var pd:pchar;
+var pd:pANSIchar; //NJED
     size,i:integer;
     sec:TJKSector;
     surf:TJKSurface;
@@ -880,7 +891,7 @@ type
 var n:integer;
     sec:TJKSector;
     tmpur:TUndoRec;
-    pd:pchar;
+    pd:pANSIchar; //NJED
 
 Procedure SetSector;
 var i,j,n:integer;

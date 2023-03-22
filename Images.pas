@@ -4,7 +4,7 @@ interface
 uses Windows,Graphics, SysUtils, Classes;
 
 Type
-    TStoredAs=(ByLines,ByCols,byLines16,bylines24,bylines32);
+    TStoredAs=(ByLines,ByCols,byLines16);
     TImageInfo=class
       StoredAs:TStoredAs;
       width,height:word;
@@ -27,8 +27,6 @@ Private
  Function LoadByCols(w,h:Integer):TBitmap;
  Procedure WriteHeader(f:TStream);
  Function LoadByLines16(w,h:Integer):TBitmap;
- Function LoadByLines24(w,h:Integer):TBitmap;
- Function LoadByLines32(w,h:Integer):TBitmap;
  Procedure Dest;
 end;
 
@@ -57,8 +55,6 @@ begin
   byLines: Result:=LoadByLines(bw,bh);
    byCols: Result:=LoadByCols(bw,bh);
   byLines16: Result:=LoadByLines16(bw,bh);
-  byLines24: Result:=LoadByLines24(bw,bh);
-  byLines32: Result:=LoadByLines32(bw,bh);
  end;
 end;
 
@@ -223,95 +219,6 @@ hbm:=CreateDIBSection(Result.Canvas.Handle,pbi^,DIB_RGB_COLORS,bits,0,0);
   FreeMem(pbi);
  end;
 end;
-
-Function TImageSource.LoadByLines24(w,h:Integer):TBitmap;
-const
-  PixelCountMax = 65536;  // 2048 MAX WIDTH
-type
-  TRGBTripleArray = array[0..PixelCountMax - 1] of TRGBTriple;
-  pRGBTripleArray = ^TRGBTripleArray;
-type TRGB=array[1..3] of longint;
-var
-   i:Integer;
-   pLine:Pchar;
-   bw,bh,bw4:Integer;
-   hbm:HBITMAP;
-   bits:pointer;
-   pbi:^TBITMAPINFO;
-   rgb:^TRGB;
-   RGBTripleLineArray: pRGBTripleArray;
-
-begin
-Result:=nil;
-
-bw:=Info.Width;
-bh:=Info.Height;
-if bw*3 and 3=0 then bw4:=bw*3 else bw4:=bw*3 and $FFFFFFFC+4;
-
-GetMem(pbi,sizeof(TBITMAPINFOHEADER)+12);
-FillChar(pBi^,sizeof(TBITMAPINFOHEADER)+12,0);
-
- With pbi^.bmiHeader do
- begin
-  biSize:=sizeof(TBITMAPINFOHEADER);
-  biWidth:=bw;
-  biHeight:=bh;
-  biPlanes:=1;
-  biBitCount:=16;
-  biCompression:=BI_BITFIELDS;
-  biSizeImage:=bh*bw4;
-end;
- rgb:=@pbi^.bmiColors;
- rgb^[3]:=$FF;    //blue mask
- rgb^[2]:=$FF00;   // green mask
- rgb^[1]:=$FF0000;  // red mask
-
-Result:=TBitmap.Create;
-result.pixelformat:=pf24bit;
-result.Width:=bw;
-result.Height:=bh;
-
-//hbm:=CreateDIBSection(Result.Canvas.Handle,pbi^,DIB_RGB_COLORS,bits,0,0);
-
- Try
-  for i:=Bh-1 downto 0 do
-  begin
-  RGBTripleLineArray:= result.ScanLine[i];
-  GetLine(RGBTripleLineArray^);
-  end;
- // result.Handle:=hbm;
-  //result.pixelformat:=pf16bit;
- finally
-  FreeMem(pbi);
- end;
-end;
-
-Function TImageSource.LoadByLines32(w,h:Integer):TBitmap;
-const
-  PixelCountMax = 65536;  // 2048 MAX WIDTH
-type
-  TRGBQuadArray = array[0..PixelCountMax - 1] of TRGBQuad;
-  pRGBQuadArray = ^TRGBQuadArray;
-var
-   i:Integer;
-   RGBQuadLineArray: pRGBQuadArray;
-
-begin
-Result:=nil;
-
-Result:=TBitmap.Create;
-result.pixelformat:=pf32bit;
-result.Width:=w;
-result.Height:=h;
-
-  for i:=h-1 downto 0 do
-  begin
-  RGBQuadLineArray:= result.ScanLine[i];
-  GetLine(RGBQuadLineArray^);
-  end;
-
-end;
-
 
 
 end.

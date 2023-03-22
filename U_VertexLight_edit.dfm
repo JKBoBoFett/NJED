@@ -2,29 +2,49 @@ object VertexLight: TVertexLight
   Left = 0
   Top = 0
   BorderStyle = bsSizeToolWin
-  Caption = 'VertexLight'
-  ClientHeight = 516
-  ClientWidth = 289
-  Color = clBtnFace
+  Caption = 'Vertex Light intensities'
+  ClientHeight = 438
+  ClientWidth = 245
+  Color = clWindow
+  Ctl3D = False
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
-  Font.Height = -11
+  Font.Height = -13
   Font.Name = 'Tahoma'
   Font.Style = []
   FormStyle = fsStayOnTop
   OldCreateOrder = False
+  Position = poMainFormCenter
   OnClose = FormClose
   OnCreate = FormCreate
   OnShow = FormShow
-  PixelsPerInch = 96
-  TextHeight = 13
+  PixelsPerInch = 120
+  TextHeight = 16
+  object SGValues: TStringGrid
+    AlignWithMargins = True
+    Left = 3
+    Top = 3
+    Width = 239
+    Height = 370
+    Align = alClient
+    ColCount = 2
+    DefaultColWidth = 105
+    DefaultRowHeight = 20
+    RowCount = 1
+    FixedRows = 0
+    Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goEditing, goAlwaysShowEditor]
+    TabOrder = 0
+    OnSelectCell = SGValuesSelectCell
+    RowHeights = (
+      20)
+  end
   object Panel1: TPanel
     Left = 0
-    Top = 454
-    Width = 289
+    Top = 376
+    Width = 245
     Height = 62
     Align = alBottom
-    TabOrder = 0
+    TabOrder = 1
     object BNSet: TButton
       Left = 80
       Top = 24
@@ -42,23 +62,5 @@ object VertexLight: TVertexLight
       Caption = 'Set all the same as Vertex 0'
       TabOrder = 1
     end
-  end
-  object SGValues: TStringGrid
-    AlignWithMargins = True
-    Left = 3
-    Top = 3
-    Width = 283
-    Height = 448
-    Align = alClient
-    ColCount = 2
-    DefaultColWidth = 105
-    DefaultRowHeight = 20
-    RowCount = 1
-    FixedRows = 0
-    Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goEditing, goAlwaysShowEditor]
-    TabOrder = 1
-    OnSelectCell = SGValuesSelectCell
-    RowHeights = (
-      20)
   end
 end

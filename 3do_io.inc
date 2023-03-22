@@ -21,7 +21,7 @@ begin
 
 end;
 
-Constructor T3DO.CreateFrom3DO(const name:string;ResetOffsets:boolean;lod:integer);
+Constructor T3DO.CreateFrom3DO(const name:string;lod:integer);
 var t:TTextFile; cpos:word; s,w1,w2:String;
     cur_line:integer;
     a,n,nx:Integer;
@@ -33,7 +33,6 @@ var t:TTextFile; cpos:word; s,w1,w2:String;
 Procedure GetNextLine(var s:String);
 var cmt_pos:word; {Position of #}
 begin
- ResetO:=ResetOffsets;
  s:='';
  Repeat
   if t.eof then begin EndOfSection:=true; exit; end;
@@ -273,9 +272,9 @@ begin
 
   hnode:=THNode.Create;
   StringToHNode(s,hnode);
- {   With hnode do
+  {  With hnode do
   SSCanf(s,'%s %s %x %d %d %s %s %s %f %f %f %f %f %f %f %f %f %s',
-           [@w1,@w1,@ntype,@nmesh,@parent,@w1,@w1,@w1,@x,@y,@z,@pch,@yaw,@rol,@pivotx,@pivoty,@pivotz,@nodename]); }
+           [@w1,@w1,@ntype,@nmesh,@parent,@w1,@w1,@w1,@x,@y,@z,@pch,@yaw,@rol,@pivotx,@pivoty,@pivotz,@nodename]);}
   HNodes.Add(Hnode);
  end;
 end;
@@ -335,7 +334,7 @@ end;
 var i,j:integer;
 begin {CreateFrom3DO begin}
  CreateNew;
- DecimalSeparator:='.';
+ FormatSettings.DecimalSeparator:='.';  // njed 8/22
 
  if ExtractFilePath(name)<>'' then t:=TTextFile.CreateRead(OpenFileRead(name,0)) else
  t:=TTextFile.CreateRead(OpenGameFile(name));
@@ -511,16 +510,15 @@ end;
 var i,j,k,v,nc:integer;
     s:string;
     rad:double;
-    playerModel:boolean;
 
 begin
  Assign(t,name);
  Rewrite(t);
 
-UnOffsetMeshes;
+ UnOffsetMeshes;
 
 Try
- WriteFmt('# MODEL %s created by NJED %s',[name,JedVersion]);
+ WriteFmt('# MODEL %s created by NJED %s',[ANSIstring(name),ANSIstring(JedVersion)]); //NJED 09/01/22
  WriteS('');
  WriteS('SECTION: HEADER');
  WriteS('');
@@ -531,7 +529,7 @@ Try
  WriteFmt('MATERIALS %d',[Mats.count]);
  For i:=0 to Mats.count-1 do
  begin
-  WriteFmt('%d: %s',[i,Mats[i]]);
+  WriteFmt('%d: %s',[i,ANSIstring(Mats[i])]);     //NJED 09/01/22
  end;
 
  Rad:=FindRadius;
@@ -541,17 +539,7 @@ Try
  WriteS('');
  WriteFmt('RADIUS %.6f',[rad]);
  WriteS('');
-
- playermodel:=false;
- if (hnodes.count >17) then
-  if (hnodes[15].nodename = 'K_HEAD') then
-    playermodel:=true;
-
- if playermodel then 
-    WriteS('INSERT OFFSET -0.000050 0.000000 0.120114')
- else
-   WriteS('INSERT OFFSET 0 0 0');
-
+ WriteS('INSERT OFFSET 0 0 0');
  WriteS('');
  WriteS('GEOSETS 1');
  WriteS('');

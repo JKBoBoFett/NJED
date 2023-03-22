@@ -270,7 +270,7 @@ end;
 var i,j:integer;
 begin {CreateFrom3DO begin}
  CreateNew;
- DecimalSeparator:='.';
+ FormatSettings.DecimalSeparator:='.';   //njed 8/22
 
  if ExtractFilePath(name)<>'' then t:=TTextFile.CreateRead(OpenFileRead(name,0)) else
  t:=TTextFile.CreateRead(OpenGameFile(name));

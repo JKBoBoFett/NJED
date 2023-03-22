@@ -5,7 +5,7 @@ interface
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
   StdCtrls, ComCtrls, GlobalVars, misc_utils, ExtCtrls, Preview, jdh_jdl,
-  J_Level, Buttons, u_templates, values, ImgList,graph_files,MatThumbNails,U_MatToBmpThread;
+  J_Level, Buttons, u_templates, values, ImgList, System.ImageList;
 
 type
   TResPicker = class(TForm)
@@ -27,7 +27,6 @@ type
     SBYAW: TScrollBar;
     SBPCH: TScrollBar;
     SBMatCell: TScrollBar;
-    BTN_matThumb: TButton;
     procedure ResListClick(Sender: TObject);
     procedure EBResNameChange(Sender: TObject);
     procedure BNOKClick(Sender: TObject);
@@ -42,7 +41,6 @@ type
     procedure CB3DOPrevClick(Sender: TObject);
     procedure SBPCHChange(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
-    procedure BTN_matThumbClick(Sender: TObject);
   private
     { Private declarations }
 {    ProjDir:String;
@@ -840,32 +838,6 @@ begin
  Hide;
 end;
 
-//NJED JAN-2023
-procedure TResPicker.BTN_matThumbClick(Sender: TObject);
-var
-i:integer;
-n:string;
-F:TFile;
-mat:TMAT;
-bm:TBitmap;
-
-begin
-MatList.Clear;  //created in MatThumbnails
-for i := 0 to (ResList.Items.Count - 1) do
-  begin
-   MatList.Add(ResList.Items.Strings[i]);
-  end;
-
-LoadCMPPal(CBCMPs.Text,CmpPal);
-
-if frmThumbNails.ShowModal = mrOk then
-        begin
-         EBResName.Text:=SelectedMatName;
-         Pv.StartPreview(EBResName.Text);
-        end
-
-end;
-
 procedure TResPicker.ResListDblClick(Sender: TObject);
 begin
  BNOK.Click;
@@ -898,7 +870,7 @@ begin
   CBCmps.Visible:=true;
   cf:=OpenGameContainer(Res2_gob);
   cf.ChDir('misc\cmp');
-  CBCmps.Items.Assign(cf.ListFiles);
+  CBCmps.Items.Assign(cf.ListFiles); //exection
   i:=CBCmps.Items.IndexOf(Cur_CMP);
   if i=-1 then i:=CBCmps.Items.Add(Cur_CMP);
   CBCmps.ItemIndex:=i;
@@ -918,7 +890,6 @@ begin
   CBCmps.Visible:=false;
   loadcmp:=false;
  end;
- BTN_matThumb.Visible:=false;
 end;
 
 procedure TResPicker.FormCreate(Sender: TObject);
@@ -991,7 +962,6 @@ end;
 
 Function TResPicker.PickMAT(CurMAT:string):string;
 begin
- BTN_matThumb.Visible:=true;
  ClearGroups;
  AddGobGroup(Res2_gob,'mat',true);
  AddGobGroup(Res2_gob,'3do\mat',true);

@@ -208,12 +208,12 @@ begin
  for i:=1 to Prefabs.count-1 do
  With TJKSector(Prefabs.Objects[i]) do
  begin
-  WriteFmt('SEC %s',[Prefabs[i]]);
+  WriteFmt('SEC %s',[ANSIstring(Prefabs[i])]); //NJED 09/02/22
   if Colormap='' then st:='-' else st:=Colormap;
   if Sound='' then st:=st+' -' else st:=st+' '+Sound;
 
   WriteFmt('%s %.6f %x %.6f %.6f %.6f %.6f %.6f %d',
-   [st,snd_vol,Flags,Ambient,extra,tint.dx,tint.dy,tint.dz,Layer]);
+   [ANSIstring(st),snd_vol,Flags,Ambient,extra,tint.dx,tint.dy,tint.dz,Layer]);  //NJED 09/02/22
 
   WriteFmt('VXS %d',[vertices.count]);
   for vx:=0 to vertices.count-1 do
@@ -230,7 +230,7 @@ begin
    st:=Material;
    if st='' then st:='-';
    WriteFmt('%s %x %x %d %d %d %.6f %d %d %d %x %.4f %.4f',
-     [st,SurfFlags,FaceFlags,geo,light,tex,extralight,Vertices.Count,asec,asf,AdjoinFlags,uscale,vscale]);
+     [ANSIstring(st),SurfFlags,FaceFlags,geo,light,tex,extralight,Vertices.Count,asec,asf,AdjoinFlags,uscale,vscale]);   //NJED 09/02/22
    st:='';
    for vx:=0 to vertices.count-1 do
    With TXVertices[vx] do

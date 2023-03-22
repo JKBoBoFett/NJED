@@ -508,13 +508,13 @@ end;
 Constructor TD3DTexture.CreateFromMat(const Mat:string;const pal:TCMPPal;const cmp:TCMPTable;adxr:TD3D5PRenderer;gamma:double);
 var
     i,j:integer;
-    pb:pchar;
+    pb:pANSIchar;
     mf:TMat;
     f:TFile;
-    pl,pline:pchar;
+    pl,pline:pANSIchar;
     res, n:integer;
 {    bits:Pchar;}
-    c:char;
+    c:ANSIchar;
     w:word;
     usepalette:boolean;
  var ddsd:TDDSURFACEDESC;
@@ -529,7 +529,7 @@ begin
 
   for j:=0 to width-1 do
   begin
-   (pl+j)^:=Chr(cmp[ord((pl+j)^)]);
+   (pl+j)^:=ANSIChar(Chr(cmp[ord((pl+j)^)]) );  //njed 8/23/2022
   end;
   Move(pl^,pb^,width);
   inc(pb,ddsd.lPitch);

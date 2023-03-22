@@ -591,7 +591,7 @@ var i,j:integer;
     tmpsurf:TJKSurface;
 begin {LoadFromJKL begin}
  ppos:=0;
- DecimalSeparator:='.';
+ FormatSettings.DecimalSeparator:='.';   // njed 8/22
  mats:=TStringList.Create;
  cmps:=TStringList.Create;
  t:=TTextFile.CreateRead(OpenFileRead(f,0));
@@ -688,7 +688,7 @@ end;
 Procedure TJKLevel.SaveToJed(F:TFileName);
 var i,s,sf,vx:integer;
     t:TextFile;
-    st:string;
+    st:ANSIstring;        //NJED 8/30/22
     asec,asf:integer;
 Procedure WriteFmt(const fmt:string;v:array of const);
 begin
@@ -704,7 +704,7 @@ begin
  RenumSecs;
  for i:=0 to Sectors.Count-1 do Sectors[i].Renumber;
  
- DecimalSeparator:='.';
+ FormatSettings.DecimalSeparator:='.';  //njed 8/22
  Assign(t,f);Rewrite(t);
  WriteS('JED '+JedVerNum);
 
@@ -723,7 +723,7 @@ begin
   st:=MasterCMP; if st='' then st:='-';
 
   WriteFmt('HDR %d %.6f %.6f %.6f %.6f %s %.2f',
-   [version,Gravity, CeilingSkyZ,PerspDist, GouraudDist,st,ppunit]);
+   [version,Gravity, CeilingSkyZ,PerspDist, GouraudDist,ANSIstring(st),ppunit]);  //NJED 09/02/22
 
   WriteFmt('HOR %.6f %.6f %.6f %.6f',
    [HorDistance,HorPixelsPerRev,HorSkyOffs[1],HorSkyOffs[2]]);
@@ -748,7 +748,7 @@ Try
   if Sound='' then st:=st+' -' else st:=st+' '+Sound;
 
   WriteFmt('%s %.6f %x %.6f %.6f %.6f %.6f %.6f %d',
-   [st,snd_vol,Flags,Ambient,extra,tint.dx,tint.dy,tint.dz,Layer]);
+   [ANSIstring(st),snd_vol,Flags,Ambient,extra,tint.dx,tint.dy,tint.dz,Layer]); //NJED 09/02/22
 
   WriteFmt('VXS %d',[vertices.count]);
   for vx:=0 to vertices.count-1 do
@@ -765,7 +765,7 @@ Try
    st:=Material;
    if st='' then st:='-';
    WriteFmt('%s %x %x %d %d %d %.6f %d %d %d %x %.4f %.4f',
-     [st,SurfFlags,FaceFlags,geo,light,tex,extralight,Vertices.Count,asec,asf,AdjoinFlags,uscale,vscale]);
+     [ANSIstring(st),SurfFlags,FaceFlags,geo,light,tex,extralight,Vertices.Count,asec,asf,AdjoinFlags,uscale,vscale]);  //NJED 09/02/22
    st:='';
    for vx:=0 to vertices.count-1 do
    With TXVertices[vx] do
@@ -790,7 +790,7 @@ Try
  begin
   if sec=nil then asec:=-1 else asec:=Sec.num;
   WriteFmt('%s %.6f %.6f %.6f %.6f %.6f %.6f %d %d',
-   [Name,X,Y,Z,PCH,YAW,ROL,aSec,Layer]);
+   [ANSIstring(Name),X,Y,Z,PCH,YAW,ROL,aSec,Layer]);  //NJED 09/02/22
   st:='';
   For i:=0 to Vals.Count-1 do
   With Vals[i] do
@@ -1135,7 +1135,7 @@ end;
 var tmpsurf:TJKSurface;
 
 begin
- DecimalSeparator:='.';
+ FormatSettings.DecimalSeparator:='.';   //njed 8/22
  t:=TTextFile.CreateRead(OpenFileRead(f,0));
  Clear;
  {ReadS(St);}

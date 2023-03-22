@@ -60,7 +60,7 @@ end;
 
 TContainerFile=class
  Permanent:Boolean;
- name:String;
+ name:ANSIString; //njed 8/21/22
  Files:TStringList;
  Dirs:TStringList;
  tmpflist:TStringList;
@@ -68,7 +68,7 @@ TContainerFile=class
  F:TFile;
  fc:TFileChangeControl;
  HasDirs:boolean;
- CurDir:String;
+ CurDir:ANSIString; //njed 8/21/22
  Constructor CreateOpen(path:String);
  Procedure Free;
  Destructor Destroy;Override;
@@ -141,7 +141,7 @@ end;
 TTextFile=Class
  f:TFile;
  bpos,bsize:word;
- buffer:array[0..txt_bufsize] of char;
+ buffer:array[0..txt_bufsize] of ANSIchar;   //njed 8/24/2022
  curline:Integer;
  Function GetFullName:String;
  Constructor CreateRead(bf:TFile);
@@ -324,9 +324,9 @@ begin
 end;
 
 Procedure TTextFile.SeekEoln;
-var ps:Pchar;
+var ps:PANSIchar;
 begin
- ps:=StrScan(@buffer[bpos],#10);
+ ps:=StrScan(@buffer[bpos],ANSIchar(#10));  //NJED
  if ps<>nil then {EoLn found}
  begin
   bpos:=ps-@buffer+1;
@@ -345,8 +345,8 @@ begin
 end;
 
 Procedure TTextFile.Readln(var s:String);
-var ps,pend:Pchar;
-    tmp:array[0..txt_maxlinesize-1] of char;
+var ps,pend:PANSIchar;     //NJED
+    tmp:array[0..txt_maxlinesize-1] of ANSIchar;  //NJED
     ssize:word;
     l:word;
 begin
@@ -684,9 +684,11 @@ end;
 Function GetDirAt(const s:string;p:integer):string;
 var sp:pchar;
 begin
- sp:=StrScan(@s[p],'\');
- if sp=nil then Begin Result:=StrPas(@s[p]); exit; end;
- Result:=Copy(s,p,sp-@s[p]);
+ //sp:=StrScan(@s[p],'\');
+ //if sp=nil then Begin Result:=String(@s[p]); exit; end;    //njed 8/22
+ //Result:=Copy(s,p,sp-@s[p]);
+
+ Result:=ExtractFileName(s);  // njed 8/23/2022
 end;
 
 Function IsLastinPath(const Path:string;p:integer):boolean;

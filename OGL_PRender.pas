@@ -147,8 +147,7 @@ pfd.iLayerType := 0;
  glShadeModel(GL_SMOOTH);
 
  //@pPalProc:=wglGetProcAddress('glColorTableEXT');
-  glEnable( GL_BLEND );
-glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
+
  if (@pPalProc=nil) then
  begin
   //PanMessage(mt_info,'Your OpenGL implemetation doesn''t support palettized textures!');
@@ -314,25 +313,17 @@ begin
 end;
 
 Constructor TOGLTexture.CreateFromMat(const Mat:string;const Pal:TCMPPal;gamma:double);
-type
-  TRGBTripleArray = array[0..32767] of TRGBTriple;
-  PRGBTripleArray = ^TRGBTripleArray;
-
-  TRGBQuadArray = array[0..43680] of TRGBQuad;
-  pRGBQuadArray = ^TRGBQuadArray;
 var
     i,j:integer;
-    pb:pchar;
+    pb:pANSIchar;    // njed 8/23/2022
     mf:TMat;
     f:TFile;
-    pl,pline:pchar;
+    pl,pline:pANSIchar;  // njed 8/23/2022
     n:integer;
-    bits:Pchar;
-    c:char;
+    bits:PANSIchar;     // njed 8/23/2022
+    c:ANSIchar;     // njed 8/23/2022
     pw:^word;
-    inrow: PRGBTripleArray;
-    inrow32: pRGBQuadArray;
-    rgb:TRGBTriple;
+
     opal:array[0..255] of record r,g,b,a:byte; end;
     usepalette:boolean;
 
@@ -360,73 +351,30 @@ begin
  begin
   mf.getLine(pl^);
   pw:=pointer(pl);
-
   for j:=0 to width-1 do
   begin
-    pb^:=chr(Min(Round((pw^ shr 8 and $F8)*gamma),255));
-    (pb+1)^:=chr(Min(Round((pw^ shr 3 and $FC)*gamma),255));
-    (pb+2)^:=chr(Min(Round((pw^ shl 3 and $F8)*gamma),255));
-    inc(pw);
-    inc(pb,3);
+    pb^:=ANSIchar(chr(Min(Round((pw^ shr 8 and $F8)*gamma),255)));     // njed 8/23/2022
+    (pb+1)^:=ANSIchar(chr(Min(Round((pw^ shr 3 and $FC)*gamma),255)));  // njed 8/23/2022
+    (pb+2)^:=ANSIchar(chr(Min(Round((pw^ shl 3 and $F8)*gamma),255)));   // njed 8/23/2022
+   inc(pw);
+   inc(pb,3);
   end;
 
  end;
 
- if mf.info.storedas=bylines24 then
-   for i:=0 to height-1 do
- begin
-  mf.getLine(pl^);
-  //mf.getLine(inrow^);
-  //pw:=pointer(pl);
-  inrow:=pointer(pl);
-  //move(chr(pl^),inrow^,width*3);
-  for j:=0 to width-1 do
-  begin
-  rgb.rgbtRed:=  min( Round(inrow^[j].rgbtRed*gamma) ,255 );
-  rgb.rgbtGreen:=min( Round(inrow^[j].rgbtGreen*gamma) ,255 );
-  rgb.rgbtBlue:= min( Round(inrow^[j].rgbtBlue*gamma) ,255 );
-
-  move(rgb.rgbtRed,pb^,sizeof(byte));
-  move(rgb.rgbtGreen,(pb+1)^,sizeof(byte));
-  move(rgb.rgbtBlue,(pb+2)^,sizeof(byte));
-
-  inc(pb,3);
-  end;
- end;
-
- if mf.info.storedas=bylines32 then
-   for i:=0 to height-1 do
- begin
-  mf.getLine(pl^);
-  inrow32:=pointer(pl);
-
-  for j:=0 to width-1 do
-  begin
-  rgb.rgbtRed:=  min( Round(inrow32^[j].rgbRed*gamma) ,255 );
-  rgb.rgbtGreen:=min( Round(inrow32^[j].rgbGreen*gamma) ,255 );
-  rgb.rgbtBlue:= min( Round(inrow32^[j].rgbBlue*gamma) ,255 );
-
-  move(rgb.rgbtRed,pb^,sizeof(byte));
-  move(rgb.rgbtGreen,(pb+1)^,sizeof(byte));
-  move(rgb.rgbtBlue,(pb+2)^,sizeof(byte));
-
-  inc(pb,3);
-  end;
- end;
-
- if mf.info.storedas=bylines then
+ if mf.info.storedas<>bylines16 then
  for i:=0 to height-1 do
  begin
   mf.getLine(pl^);
 
   for j:=0 to width-1 do
   begin
-   c:=(pl+j)^;
+   c:=ANSIchar((pl+j)^);  //njed 8/23/2022
    With pal[ord(c)] do
    begin
-    pb^:=chr(r);
-    (pb+1)^:=chr(g);
-    (pb+2)^:=chr(b);
+    pb^:=ANSIchar(chr(r));      // njed 8/23/2022
+    (pb+1)^:=ANSIchar(chr(g));  // njed 8/23/2022
+    (pb+2)^:=ANSIchar(chr(b));   // njed 8/23/2022
    end;
    inc(pb,3);
   end;
@@ -503,7 +451,7 @@ glGenTextures(1,@ObjIdx);
 
  
 
-  glTexImage2D( GL_TEXTURE_2D, 0, GL_RGB8,
+  glTexImage2D( GL_TEXTURE_2D, 0, 3,
           width, height, 0,
           GL_RGB, GL_UNSIGNED_BYTE,
          bits );

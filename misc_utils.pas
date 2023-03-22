@@ -399,7 +399,7 @@ begin
 end;
 
 Function DwordToStr(d:Longint):String;
-var c:Char;
+var c:ANSIChar;   // njed 8/22
     a:Integer;
 begin
  if d>=0 then Str(d,Result)
@@ -450,17 +450,22 @@ end;
 
 {Accepted formatters - %s %d %x %.1f - %.6f}
 Function SPrintf(const format:string;const vals:array of const):string;
-var pres,pf,pe,pp,pa:pchar;
+var pres,pf,pe,pp,pa:pANSIchar;   //NJED
+    pres1:pchar;
     cv,i,ndig:integer;
     pv:^TVarRec;
-    buf:array[0..4095] of char;
+    buf:array[0..4095] of ANSIchar;  //NJED
+    Aformat:ANSIstring;    //NJED
+    TMPstring:ANSIstring;
 begin
+ Aformat:=ANSIstring(format); //NJED
  result:='';
  FillChar(buf,4096,0);
- pf:=@format[1];
+ pf:=@Aformat[1];
  pres:=@buf;
  cv:=0;
  pa:=@buf;
+
  repeat
   pp:=StrScan(pf,'%');
   if pp=nil then pe:=strEnd(pf) else pe:=pp;
@@ -474,16 +479,30 @@ begin
 
   case pp^ of
    's','S': begin
-             if pv^.vtype<>vtAnsiString then raise EconvertError.Create('Invalid parameter type');
-             if pv^.vAnsiString<>nil then pres:=StrECopy(pres,pchar(pv^.vAnsiString));
+             if (pv^.vtype<>vtAnsiString) and
+                (pv^.vtype<>vtUnicodeString)     //NJED 09/30/22
+              then raise EconvertError.Create('Invalid parameter type');
+
+              if (pv^.vtype=vtAnsiString) then
+              begin
+                if pv^.vAnsiString<>nil then pres:=StrECopy(pres,pANSIchar(pv^.vAnsiString));  //NJED
+              end;
+
+             if (pv^.vtype=vtUnicodeString) then
+              begin
+                 if pv^.vUnicodeString<>nil then pres:=StrECopy(pres,pANSIchar(pv^.vUnicodeString));  //NJED
+              end;
+
             end;
    'd','D': begin
              if pv^.vtype<>vtInteger then raise EconvertError.Create('Invalid parameter type');
-             pres:=StrECopy(pres,pchar(IntToStr(pv^.vInteger)));
+             pres:=StrECopy(pres,pANSIchar( ANSIstring(pv^.vInteger.ToString) ));    //NJED
+
             end;
    'x','X': begin
              if pv^.vtype<>vtInteger then raise EconvertError.Create('Invalid parameter type');
-             pres:=StrECopy(pres,pchar(IntToHex(pv^.vInteger,1)));
+             //pres:=StrECopy(pres,pANSIchar(IntToHex(pv^.vInteger,1)));   //NJED
+            pres:=StrECopy(pres,pANSIchar( ANSIstring(pv^.vInteger.ToHexString(1)) ));    //NJED
             end;
    'f','F','.':
             begin

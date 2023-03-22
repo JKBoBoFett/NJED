@@ -5,7 +5,7 @@ interface
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
   ExtCtrls, Grids, J_Level, FieldEdit, Geometry, misc_utils, StdCtrls, Clipbrd,
-  Values, u_multisel, u_undo, U_VertexLight_edit,U_SurfaceTools;
+  Values, u_multisel, u_undo, Vcl.ValEdit, U_VertexLight_edit,U_SurfaceTools;
 
 Const
   ID_FLAGS=0;
@@ -49,23 +49,25 @@ Const
   Thing_fields=9;
 
   ID_EDGELEN=2;
-   ID_light=5; //NJED
+  ID_light=5; //NJED
+
 type
   TItemEdit = class(TForm)
     SGFields: TStringGrid;
     PNButtons: TPanel;
     Panel2: TPanel;
-    ColorDlg: TColorDialog;
     BNAdd: TButton;
     BNRemove: TButton;
     BNAsFrame: TButton;
     CBOnTop: TCheckBox;
-    LBCogs: TListBox;
-    Panel3: TPanel;
     LBText: TLabel;
     BNPaste: TButton;
+    ColorDlg: TColorDialog;
     PNLight: TPanel;
     BNlight: TButton;
+    Panel1: TPanel;
+    Panel3: TPanel;
+    LBCogs: TListBox;
     BNTools: TButton;
     procedure FormCreate(Sender: TObject);
     procedure FormActivate(Sender: TObject);
@@ -197,7 +199,7 @@ case ID of
             Result:=ValHex(s,f);
             if Result then sec.Flags:=f;
            end;
-ID_AMBIENT:begin
+ ID_AMBIENT:begin
             Result:=ValDouble(s,d);
             if Result then sec.ambient:=d;
             exit;
@@ -276,13 +278,20 @@ end;
 end;
 
 Procedure TItemEdit.LoadSurface(surf:TJKSurface);
-var ast:string;
+var
+ ast:string;
+ v:integer;
+ TVLight:single;
 begin
+
+
+
+
  Caption:=Format('Sector %d Surface %d',[Surf.Sector.Num,Surf.Num]);
  ResetEdit;
 
- PNLight.Visible:=true;  //NJED
- BNlight.Visible:=true;  //NJED
+ PNLight.Visible:=true;
+ BNlight.Visible:=true;
 
   LBText.Caption:=Format('%d Vertices',
   [surf.vertices.count]);
@@ -302,7 +311,7 @@ begin
  fe.AddFieldHex('+ADJOIN FLAGS',ID_AdjFlags,AdjoinFlags);
  fe.AddFieldHex('+SURF FLAGS',ID_SurfFlags,SurfFlags);
  fe.AddFieldHex('+FACE FLAGS',ID_FaceFlags,FaceFlags);
-{ fe.AddFieldInt('LIGHT',ID_light,Light);}
+ fe.AddFieldFloat('LIGHT',ID_light,TVLight); //NJED 9/11/22
  fe.AddFieldFloat('EXTRA LIGHT',ID_SF_extra,extraLight);
 end;
 
@@ -946,9 +955,8 @@ begin
  BNPaste.Visible:=false;
  LBCogs.Items.Clear;
  LBText.Caption:='';
-
- PNLight.Visible:=false;  //NJED
- BNlight.Visible:=false;  //NJED
+ PNLight.Visible:=false;
+ BNlight.Visible:=false;
 end;
 
 procedure TItemEdit.FormActivate(Sender: TObject);
@@ -1052,7 +1060,7 @@ end;
 
 procedure TItemEdit.BNToolsClick(Sender: TObject);
 begin
- SurfaceTools.show;
+SurfaceTools.show;
 end;
 
 procedure TItemEdit.BNAsFrameClick(Sender: TObject);

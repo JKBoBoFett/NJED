@@ -146,6 +146,7 @@ memo1.Lines.Add('TXVerts: '+inttostr(level.Sectors[JedMain.Cur_SC].surfaces[JedM
      SetPointSize(3);
     for s:=0 to level.Sectors[JedMain.Cur_SC].surfaces[JedMain.Cur_SF].Vertices.Count-1 do
            begin
+
               txv:= level.Sectors[JedMain.Cur_SC].surfaces[JedMain.Cur_SF].TXVertices.GetItem(s);
                  v:=   level.Sectors[JedMain.Cur_SC].surfaces[JedMain.Cur_SF].GetVXs.GetItem(s);
 //DrawVertex( (txv.u * (bm.Width div 2))  ,      (-(txv.v * (bm.Height div 2))) );

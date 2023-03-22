@@ -270,7 +270,7 @@ Type
 
 Function WhatContainer(Path:String):ct_type;
 var ext:String;
-    buf:array[1..4] of char;
+    buf:array[1..4] of ANSIchar;
     f:TFile;
 begin
  Result:=ct_unknown;

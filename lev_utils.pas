@@ -3,7 +3,7 @@ unit lev_utils;
 interface
 
 uses Geometry, J_Level, misc_utils, GlobalVars, ProgressDialog,
-graph_files, U_multisel, u_undo, u_3dos,jed_plugins,classes,Dialogs,UV_utils;
+graph_files, U_multisel, u_undo, u_3dos,jed_plugins;
 
 Const
      rs_surfs=1;
@@ -71,9 +71,7 @@ Function IsPointIn2DBox(const box:T2DBox; x,y:double):boolean;
 
 Procedure FindCenter(sec:TJKSector;var CX,CY,CZ:double);
 Procedure CalcSecCenter(sec:TJKSector; var cx,cy,cz:double);
-Procedure NJEDCalcSecCenter(sec:TJKSector; var cx,cy,cz:double);
 
-Procedure CalcSurfBBox(surf:TJKSurface;var box:TBox);
 Procedure CalcSurfCenter(surf:TJKSurface;var cx,cy,cz:double);
 Procedure CalcSurfRect(surf:TJKSurface;v1,v2,v3,v4:TVertex;by:double);
 
@@ -237,7 +235,6 @@ Function DotProduct(X1,Y1,Z1,X2,Y2,Z2:double):double;
 Function VCross(const a,b:TVector):TVector;
 Procedure SysCalcSurfData(surf:TJKSurface;var xv,yv:Tvector;
                         var minx,miny,maxx,maxy:double);
-
 Function SectorAddVertex(sec:integer;x,y,z:double):integer;
 Procedure InsetSurface(surf:TJKSurface; by:double; XB,YB,ZB:boolean);
 Function SurfaceAddVertex(sc,sf:integer;secvx:integer):Integer;
@@ -246,11 +243,6 @@ Function SectorAddSurface(sec:integer):integer;
 Function SectorFindVertex(sec:integer;x,y,z:double):integer;
 Procedure SurfaceUpdate(sc,sf:integer;how:integer);
 Procedure NJEDCalcSurfCenter(surf:TJKSurface;var cx,cy,cz:double);
-Procedure NJEDScaleSurface(surf:TJKSurface; ScaleFactor:double; XB,YB,ZB:boolean);
-Procedure NJEDCollapseSurface(surf:TJKSurface);
-Procedure NJEDMoveSurface(surf:TJKSurface; MoveFactor:double; down:boolean; XB,YB,ZB:boolean);
-function NJEDGetVAngle(xa,ya,za,xb,yb,zb:double):Double;
-
 implementation
 uses Math, SysUtils, Jed_main, u_tbar, values, u_COGForm;
 
@@ -527,13 +519,7 @@ begin
  Result:=true;
 end;
 
-function NJEDGetVAngle(xa,ya,za,xb,yb,zb:double):Double;
-begin
-//? = arccos[(xa * xb + ya * yb + za * zb) / (?(xa2 + ya2 + za2) * ?(xb2 + yb2 + zb2))]
 
-result:=ArcCos( (xa * xb + ya * yb + za * zb) / (sqrt(sqr(xa) + sqr(ya) + sqr(za)) * sqrt(sqr(xb) + sqr(yb) + sqr(zb)) ));
- result:= result * 180/pi;
-end;
 
 function GetAngle(x,y:Double;xa,ya,xb,yb:double):Double;
 {calculates angle formed by the X,Z and vertices of the wall}
@@ -1338,11 +1324,10 @@ begin
  nsec.Renumber;
 
  if not ConnectSurfaces(surf,asurf) then;
- 
+
  JedMain.SectorAdded(nsec);
  JedMain.SectorChanged(surf.sector);
 end;
-
 
 //NJED 09/26/2022
 Function SectorAddVertex(sec:integer;x,y,z:double):integer;
@@ -1427,8 +1412,6 @@ var
   Msect:TJKsector;
   asec:TJKSector;
 begin
- StartUndoRec('Inset surface(s)');
-
  scale_factor:=1-by;
 
  //CalcSurfCenter(surf,MVec.x,MVec.y,MVec.z);
@@ -1437,7 +1420,7 @@ begin
  surfnumverts:=surf.Vertices.Count;
  vec:= surf.normal;
  Msect:=surf.sector;
-  SaveSecUndo(Msect,ch_changed,sc_both);
+
  for i := surfnumverts - 1 downto (0) do
    begin
 
@@ -1530,175 +1513,6 @@ begin
                    SurfaceUpdate(JedMain.cur_sc,n,7);
                    end;
   end;
-
-//NJED 10/09/2022
-Procedure NJEDScaleSurface(surf:TJKSurface; ScaleFactor:double; XB,YB,ZB:boolean);
-var
-CVec:Tvector;
-vec:TVector;
-surfnumverts,i,vxnum,n:integer;
-x,y,z,vx,vy,vz,dx,dy,dz: double;
-sect:TJKsector;
-v:TJKVertex;
-begin
- StartUndoRec('Scale surface(s)');
- NJEDCalcSurfCenter(surf,CVec.x,CVec.y,CVec.z);
- vec:= surf.normal;
- sect:=surf.sector;
- SaveSecUndo(sect,ch_changed,sc_both);
- surfnumverts:=surf.Vertices.Count;
-
- for i := surfnumverts - 1 downto (0) do
-   begin
-    vxnum:=Level.Sectors[JedMain.cur_sc].surfaces[JedMain.Cur_SF].vertices[i].num;
-
-    //get vertex
-    v:=Level.Sectors[JedMain.cur_sc].Vertices[vxnum];
-    x:=v.x;
-    y:=v.y;
-    z:=v.z;
-
-    //get vector from surface center
-    vx:=x-Cvec.x;
-    vy:=y-Cvec.y;
-    vz:=z-Cvec.z;
-
-    //scale the vector
-    vx:=ScaleFactor*vx;
-    vy:=ScaleFactor*vy;
-    vz:=ScaleFactor*vz;
-
-    //get the new vertex's
-    dx:=Cvec.x+vx;
-    dy:=Cvec.y+vy;
-    dz:=Cvec.z+vz;
-
-    vx:=x;
-    vy:=y;
-    vz:=z;
-
-    //if checkbox1.Checked then
-    vx:=dx;
-
-    //if  checkbox2.Checked then
-    vy:=dy;
-
-    //if  checkbox3.Checked then
-    vz:=dz;
-
-    //update vertex
-    v:=Level.Sectors[JedMain.cur_sc].Vertices[vxnum];
-    v.x:=vx;
-    v.y:=vy;
-    v.z:=vz;
-
-    SectorUpdate(JedMain.cur_sc);
-    end;
-
-    for n := 0 to (Level.Sectors[JedMain.cur_sc].surfaces.count - 1) do
-                   begin
-                   SurfaceUpdate(JedMain.cur_sc,n,7);
-                   end;
-end;
-
-Procedure NJEDCollapseSurface(surf:TJKSurface);
-var
-surfnumverts,vxnum,i,n:integer;
-CVec:Tvector;
-v:TJKVertex;
-nvx:TJKVertex;
-begin
-NJEDScaleSurface(surf, 0.001,true,true,true);
-{
-surfnumverts:=surf.Vertices.Count;
-NJEDCalcSurfCenter(surf,CVec.x,CVec.y,CVec.z);
-StartUndoRec('Collapse surface(s)');
-SaveSecUndo(surf.sector,ch_changed,sc_both);
-
-nvx:=surf.sector.NewVertex;
-nvx.x:=CVec.x;
-nvx.y:=CVec.y;
-nvx.z:=CVec.z;
-
-
-for i := surfnumverts - 1 downto (0) do
-    begin
-    vxnum:=Level.Sectors[JedMain.cur_sc].surfaces[JedMain.Cur_SF].vertices[i].num;
-      Level.Sectors[JedMain.cur_sc].Vertices[vxnum].Assign(nvx);
-    //update vertex
-//    v:=Level.Sectors[JedMain.cur_sc].Vertices[vxnum];
-//    v.x:=CVec.x;
-//    v.y:=CVec.y;
-//    v.z:=CVec.z;
-   end;
-   // surf.sector.surfaces.Delete(surf.num);
-    SectorUpdate(JedMain.cur_sc);
-      
-    for n := 0 to (Level.Sectors[JedMain.cur_sc].surfaces.count - 1) do
-                   begin
-                   SurfaceUpdate(JedMain.cur_sc,n,7);
-                    Level.Sectors[JedMain.cur_sc].surfaces[n].CalcNormal;
-
-                   end;
-}
-end;
-
-Procedure NJEDMoveSurface(surf:TJKSurface; MoveFactor:double;down:boolean; XB,YB,ZB:boolean);
-var
-vec:TVector;
-surfnumverts,vxnum,i,n,k:integer;
-v:TJKVertex;
-x,y,z,vx,vy,vz,dx,dy,dz: double;
-begin
- vec:= surf.normal;
- surfnumverts:=surf.Vertices.Count;
-  for i := surfnumverts - 1 downto (0) do
-    begin
-     vxnum:=Level.Sectors[JedMain.cur_sc].surfaces[JedMain.Cur_SF].vertices[i].num;
-
-     //get vertex
-    v:=Level.Sectors[JedMain.cur_sc].Vertices[vxnum];
-    x:=v.x;
-    y:=v.y;
-    z:=v.z;
-
-    k:=1;
-    if down then k:=k*-1;
-
-    dx:=x+k*vec.x*MoveFactor;
-    dy:=y+k*vec.y*MoveFactor;
-    dz:=z+k*vec.z*MoveFactor;
-
-    vx:=x;
-    vy:=y;
-    vz:=z;
-
-    //if checkbox1.Checked then
-     if XB then vx:=dx;
-
-     //if  checkbox2.Checked then
-     if YB then  vy:=dy;
-
-     //if  checkbox3.Checked then
-     if ZB then vz:=dz;
-
-    //update vertex
-    v:=Level.Sectors[JedMain.cur_sc].Vertices[vxnum];
-    v.x:=vx;
-    v.y:=vy;
-    v.z:=vz;
-
-    SectorUpdate(JedMain.cur_sc);
-
-    end;
-
-   for n := 0 to (Level.Sectors[JedMain.cur_sc].surfaces.count - 1) do
-                   begin
-                   SurfaceUpdate(JedMain.cur_sc,n,7);
-                   end;
-
-
-end;
 
 Procedure ExtrudeSurface(surf:TJKSurface; by:double);
 var lev:TJKLevel;
@@ -3080,329 +2894,12 @@ end;
 
 Function NJEDGetRefVertex (surf:TJKSurface):Integer;
 var
-i,Top_refIndex,Bot_refIndex:Integer;
-cx,cy,cz,x1,x2,vx,vy,vz,sec_cx,sec_cy,sec_cz,Y1,Z1,Y2,Z2:double;
-tx1,ty1,tz1,tx2,ty2,tz2:double;
+i:Integer;
+cx,cy,cz,x1,x2:double;
 minx,miny,minz,maxx,maxy,maxz,dstx,dsty,dstz:double;
-SnapV,Unormal,Vnormal,UnormalImage,VnormalImage,Nvec,Fvec,V,U,ViewV,Znormal:TVector;
-dp:single;
-List: TList;
-surfBB,secbb:Tbox;
-BLeft,TLeft,BRight,TRight:TVertex;
-isLeft,isTopEdge: boolean;
+Unormal,Vnormal,UnormalImage,VnormalImage:TVector;
 begin
-
-  CalcSurfBBox(surf,surfBB);
-   BLeft:=TVertex.Create;
-   BRight:=TVertex.Create;
-   TRight:=TVertex.Create;
-   TLeft:=TVertex.Create;
-   BLeft.x:=surfBB.X1;  BLeft.y:=surfBB.Y1; BLeft.z:=surfBB.Z1;
-   BRight.x:=surfBB.X2; BRight.y:=surfBB.Y1; BRight.z:=surfBB.Z1;
-   TLeft.x:=surfBB.X1; TLeft.y:=surfBB.Y1; TLeft.z:=surfBB.Z2;
-   TRight.x:=surfBB.X2; TRight.y:=surfBB.Y2; TRight.z:=surfBB.Z2;
-
-   NJEDCalcSurfCenter(surf,cx,cy,cz);
-   NJEDCalcSecCenter(surf.sector,sec_cx,sec_cy,sec_cz);
-   ViewV.x:=cx-sec_cx;  ViewV.y:=cy-sec_cy; ViewV.z:=cz-sec_cz;
-   normalize(ViewV);
-   // normalize(ViewV);
-
-   SnapV:=VSnapToAxis(surf.normal);
-    getTopEdge(surf,tX1,tY1,tZ1,tX2,tY2,tZ2);
-
-   //pos x normal
-  // if (surf.normal.x > surf.normal.y ) and (surf.normal.x > surf.normal.z ) then
-    if (SnapV.x = 1) and (SnapV.y = 0) and (SnapV.z = 0) then
-    begin
-     TLeft.x:=surfBB.X2;  TLeft.y:=surfBB.Y1; TLeft.z:=surfBB.Z2;
-     TRight.x:=surfBB.X1; TRight.y:=surfBB.Y2; TRight.z:=surfBB.Z2;
-     BLeft.x:=surfBB.X2;  BLeft.y:=surfBB.Y1; BLeft.z:=surfBB.Z1;
-     BRight.x:=surfBB.X1; BRight.y:=surfBB.Y2; BRight.z:=surfBB.Z1;
-    end;
-
-   //neg x normal
-   //if (surf.normal.x < surf.normal.y ) and (surf.normal.x < surf.normal.z ) then
-   if (SnapV.x = -1) and (SnapV.y = 0) and (SnapV.z = 0) then
-     begin
-     TLeft.x:=surfBB.X2;  TLeft.y:=surfBB.Y2; TLeft.z:=surfBB.Z2;
-     TRight.x:=surfBB.X1; TRight.y:=surfBB.Y1; TRight.z:=surfBB.Z2;
-     BLeft.x:=surfBB.X2;  BLeft.y:=surfBB.Y2; BLeft.z:=surfBB.Z1;
-     BRight.x:=surfBB.X1; BRight.y:=surfBB.Y1; BRight.z:=surfBB.Z1;
-     end;
-
-   //pos y normal
-   //if (surf.normal.y > surf.normal.x ) and (surf.normal.y > surf.normal.z ) then
-   if (SnapV.x = 0) and (SnapV.y = 1) and (SnapV.z = 0) then
-    begin
-     TLeft.x:=surfBB.X2;  TLeft.y:=surfBB.Y1; TLeft.z:=surfBB.Z2;
-     TRight.x:=surfBB.X1; TRight.y:=surfBB.Y2; TRight.z:=surfBB.Z2;
-     BLeft.x:=surfBB.X2;  BLeft.y:=surfBB.Y1; BLeft.z:=surfBB.Z1;
-     BRight.x:=surfBB.X1; BRight.y:=surfBB.Y2; BRight.z:=surfBB.Z1;
-    end;
-
-    //neg y normal
-   //if (surf.normal.y < surf.normal.x ) and (surf.normal.y < surf.normal.z ) then
-   if (SnapV.x = 0) and (SnapV.y = -1) and (SnapV.z = 0) then
-    begin
-     TLeft.x:=surfBB.X1;  TLeft.y:=surfBB.Y1; TLeft.z:=surfBB.Z2;
-     TRight.x:=surfBB.X2; TRight.y:=surfBB.Y2; TRight.z:=surfBB.Z2;
-     BLeft.x:=surfBB.X1;  BLeft.y:=surfBB.Y1; BLeft.z:=surfBB.Z1;
-     BRight.x:=surfBB.X2; BRight.y:=surfBB.Y2; BRight.z:=surfBB.Z1;
-    end;
-
-   //pos z normal
-   if (SnapV.x = 0) and (SnapV.y = 0) and (SnapV.z = 1) then
-    begin
-     TLeft.x:=surfBB.X1;  TLeft.y:=surfBB.Y2; TLeft.z:=surfBB.Z1;
-     TRight.x:=surfBB.X2; TRight.y:=surfBB.Y2; TRight.z:=surfBB.Z2;
-     BLeft.x:=surfBB.X1;  BLeft.y:=surfBB.Y1; BLeft.z:=surfBB.Z1;
-     BRight.x:=surfBB.X2; BRight.y:=surfBB.Y1; BRight.z:=surfBB.Z2;
-    end;
-
-   //neg z normal
-   if (SnapV.x = 0) and (SnapV.y = 0) and (SnapV.z = -1) then
-    begin
-
-    end;
-
-   if (abs(surf.normal.x) > abs(surf.normal.z)) or (abs(surf.normal.y) > abs(surf.normal.z)) then
-   begin
-     //90 degrees CCW about z-axis: (x, y, z) -> (-y, x, z)
-     Unormal.x:=surf.normal.y*-1;
-     Unormal.y:=surf.normal.x;
-     Unormal.z:=surf.normal.z;
-   end
-   else
-   begin
-   // 90 degrees CCW about y-axis: (x, y, z) -> (z, y, -x)
-    Unormal.x:=surf.normal.z;
-    Unormal.y:=surf.normal.y;
-    Unormal.z:=surf.normal.x*-1;
-   end;
-
- //   if (abs(Unormal.y) > abs(Unormal.x)) and (abs(Unormal.y) > abs(Unormal.z)) then
- //  begin
- //   TLeft.x:=surfBB.X1; TLeft.y:=surfBB.Y1; TLeft.z:=surfBB.Z2;
- //  end;
-   Nvec.x:=TRight.x-TLeft.x; Nvec.y:=TRight.y-TLeft.y; Nvec.z:=TRight.z-TLeft.z;
-   normalize(Nvec);
-   Fvec.x:=TLeft.x-TRight.x; Fvec.y:=TLeft.y-TRight.y; Fvec.z:=TLeft.z-TRight.z;
-   normalize(Fvec);
-    //1 is the same vector, -1 is opposite
-{left to right}    x2:=DotProduct(Nvec.x, Nvec.y, Nvec.z, Unormal.x, Unormal.y,Unormal.z);
- {right to left}  x1:=DotProduct(Fvec.x, Fvec.y, Fvec.z, Unormal.x, Unormal.y,Unormal.z);
-    isleft:=false;
-   if (x2 > 0) then
-     begin
-      isleft:=true;
-     end;
-
-   For i:=0 to surf.vertices.count-1 do
-      begin
-        if isleft then
-           begin
-           if (surf.vertices[i].x = tx1) and (surf.vertices[i].y = ty1) and (surf.vertices[i].z = tz1) then
-            Top_refIndex:=i;
-           end
-        else
-         begin
-         if (surf.vertices[i].x = TRight.x) and (surf.vertices[i].y = TRight.y) and (surf.vertices[i].z = TRight.z) then
-            Top_refIndex:=i;
-         end;
-
-     end;
-
-   //get bottom
-   Nvec.x:=BRight.x-BLeft.x; Nvec.y:=BRight.y-BLeft.y; Nvec.z:=BRight.z-BLeft.z;
-   normalize(Nvec);
-   Fvec.x:=BLeft.x-BRight.x; Fvec.y:=BLeft.y-BRight.y; Fvec.z:=BLeft.z-BRight.z;
-   normalize(Fvec);
-    //1 is the same vector, -1 is opposite
-{left to right}    x2:=DotProduct(Nvec.x, Nvec.y, Nvec.z, Unormal.x, Unormal.y,Unormal.z);
- {right to left}  x1:=DotProduct(Fvec.x, Fvec.y, Fvec.z, Unormal.x, Unormal.y,Unormal.z);
-    isleft:=false;
-   if (x2 > 0) then
-     begin
-      isleft:=true;
-     end;
-
-   For i:=0 to surf.vertices.count-1 do
-      begin
-        if isleft then
-           begin
-           if (surf.vertices[i].x = BLeft.x) and (surf.vertices[i].y = BLeft.y) and (surf.vertices[i].z = BLeft.z) then
-            Bot_refIndex:=i;
-           end
-        else
-         begin
-         if (surf.vertices[i].x = BRight.x) and (surf.vertices[i].y = BRight.y) and (surf.vertices[i].z = BRight.z) then
-            Bot_refIndex:=i;
-         end;
-
-     end;
-
-
-
-
-
-
-      //test uv coords
-     For i:=0 to surf.vertices.count-1 do
-      begin
-     isTopEdge:= IsPointWithInLine( surf.vertices[i].x, surf.vertices[i].y, surf.vertices[i].z,
-                         tx1, ty1, tz1,
-                         tx2, ty2, tz2);
-      if isTopEdge then
-      begin
-      // Fvec.x:=surf.vertices[i].x-surf.vertices[Top_refIndex].x;
-      // Fvec.y:=surf.vertices[i].y-surf.vertices[Top_refIndex].y;
-      // Fvec.z:=surf.vertices[i].z-surf.vertices[Top_refIndex].z;
-
-       Fvec.x:=surf.vertices[i].x-TLeft.x;
-       Fvec.y:=surf.vertices[i].y-TLeft.y;
-       Fvec.z:=surf.vertices[i].z-TLeft.z;
-       end
-       else
-       begin
-       Fvec.x:=surf.vertices[i].x-BLeft.x;
-       Fvec.y:=surf.vertices[i].y-BLeft.y;
-       Fvec.z:=surf.vertices[i].z-BLeft.z;
-       end;
-
-       normalize(Fvec);
-       x1:=DotProduct(Fvec.x, Fvec.y, Fvec.z, Unormal.x, Unormal.y,Unormal.z);
-      end;
-
-
-   //   ShowMessage('index: '+inttostr(Top_refindex));
-    ///////////////////////////////////////////////
-   Vnormal.x:=BLeft.x-TLeft.x; Vnormal.y:=BLeft.y-TLeft.y; Vnormal.z:=BLeft.z-TLeft.z;
-   normalize(Vnormal);
-
-    Unormal:=VCross(ZNormal,ViewV);
-   x1:=DotProduct(ViewV.x, ViewV.y, ViewV.z, TRight.x-sec_cx, TRight.y-sec_cy,TRight.z-sec_cz);
-   x2:=DotProduct(ViewV.x, ViewV.y, ViewV.z, TLeft.x-sec_cx, TLeft.y-sec_cy,TLeft.z-sec_cz);
-   U.x:=TLeft.x-sec_cx; U.y:=TLeft.y-sec_cy; U.z:=TLeft.z-sec_cz;
-   normalize(U);
-
-   V.x:=TRight.x-sec_cx; V.y:=TRight.y-sec_cy; V.z:=TRight.z-sec_cz;
-   normalize(V);
-
-   Unormal.x:=U.x-V.x;  Unormal.y:=U.y-V.y; Unormal.z:=U.z-V.z;
-   normalize(Unormal);
-   x1:=DotProduct(U.x, U.y, U.z, Vnormal.x, Vnormal.y, Vnormal.z);
-   x2:=DotProduct(Vnormal.x, Vnormal.y, Vnormal.z, V.x, V.y, V.z);
-
-  // CalcSurfRect(surf.sector;sec_cx,sec_cx,v3,v4:TVertex;by:double);
-{
-   U.x:=TRight.x-cx; U.y:=TRight.y-cy; U.z:=TRight.z-cz;
-   V.x:=TLeft.x-cx; V.y:=TLeft.y-cy; V.z:=TLeft.z-cz;
-
-   Vnormal.x:=TLeft.x-BLeft.x; Vnormal.y:=TLeft.y-BLeft.y; Vnormal.z:=TLeft.z-BLeft.z;
-    normalize(U);
-    normalize(V);
-    normalize(Vnormal);
-   x1:=DotProduct(surf.normal.x, surf.normal.y, surf.normal.z, U.x,U.y,U.z);
-   x2:=DotProduct(surf.normal.x, surf.normal.y, surf.normal.z, V.x,V.y,V.z);
-
-
-    refIndex:=-1;
-    if (surf.vertices[0].x = TLeft.x) and (surf.vertices[0].y = TLeft.y) and (surf.vertices[0].z = TLeft.z) then
-     refIndex:=0
-     else
-       begin
-          For i:=0 to surf.vertices.count-1 do
-           begin
-           if (surf.vertices[i].x = TRight.x) and (surf.vertices[i].y = TRight.y) and (surf.vertices[i].z = TRight.z) then
-             begin
-             refIndex:=i;
-              end;
-             end;
-       end;
-
-    if (surf.vertices[0].x = TLeft.x) and (surf.vertices[i].y = TLeft.y) and (surf.vertices[i].z = TLeft.z) then
-     refIndex:=0;
-
- For i:=0 to surf.vertices.count-1 do
- begin
-  if (surf.vertices[i].x = TLeft.x) and (surf.vertices[i].y = TLeft.y) and (surf.vertices[i].z = TLeft.z) then
-    begin
-    refIndex:=i;
-    end;
-  end;
-
-}
-   //SetVec(U,BRight.x-BLeft.x, RoundTo(BRight.y-BLeft.y,-3), BRight.z-BLeft.z);
-  // SetVec(U,TLeft.x-TRight.x, TLeft.y-TRight.y, TLeft.z-TRight.z);
-  //normalize(U);
-   x1:=DotProduct(surf.normal.x, surf.normal.y, surf.normal.z, U.x,U.y,U.z);
-  V.x:=TLeft.x-BLeft.x; V.y:=TLeft.y-BLeft.y; V.z:=TLeft.z-BLeft.z;
-  normalize(V);
-  Unormal:=VCross(Surf.Normal,V);
- // SetVec(U,surfBB.X2-surfBB.X1, RoundTo(surfBB.Y2-surfBB.Y1,-3), surfBB.Z2-surfBB.Z1);
-   U.x:=TRight.x-TLeft.x; U.y:=TRight.y-TLeft.y; U.z:=TRight.z-TLeft.z;
-  normalize(U);
-
-  Vnormal:=VCross(Surf.Normal,U);
-  x1:=DotProduct(surf.normal.x, surf.normal.y, surf.normal.z, U.x,U.y,U.z);
-
-  List := TList.Create;
   CalcSurfCenter(surf,cx,cy,cz);
-  NJEDCalcSurfCenter(surf,cx,cy,cz);
-  Nvec.x:=surf.normal.x;
-  Nvec.y:=surf.normal.y;
-  Nvec.z:=surf.normal.z;
-
- // 90 degrees CW about x-axis: (x, y, z) -> (x, -z, y)
- // 90 degrees CCW about x-axis: (x, y, z) -> (x, z, -y)
- // 90 degrees CW about y-axis: (x, y, z) -> (-z, y, x)
- // 90 degrees CCW about y-axis: (x, y, z) -> (z, y, -x)
- //90 degrees CW about z-axis: (x, y, z) -> (y, -x, z)
-//90 degrees CCW about z-axis: (x, y, z) -> (-y, x, z)
-  Fvec.x:=Nvec.z*-1;
-  Fvec.y:= Nvec.y;
-  Fvec.z:=Nvec.x;
-   dp:= NJEDGetVAngle(0,0,1, 0.5,0.5,0);
-
-
-
-
-
-
-
-
- For i:=0 to surf.vertices.count-1 do
- begin
-   //get vector from surface center
-         v.x:=surf.vertices[i].x-cx;
-         v.y:=surf.vertices[i].y-cy;
-         v.z:=surf.vertices[i].z-cz;
-         normalize(v);
-         normalize(Fvec);
-
-     Vnormal:=VCross(Surf.Normal,V);
-
-
-     dp:= NJEDGetVAngle(Fvec.x,Fvec.y,Fvec.z, v.x,v.y,v.z);
-     if dp > 90 then List.Add(pointer(i));
-   // dp := DotProduct(Fvec.x,Fvec.y,Fvec.z, v.x,v.y,v.z);
-
- end;
-  Fvec.x:=Nvec.x;
-  Fvec.y:= Nvec.z;
-  Fvec.z:=Nvec.y*-1;
-For i:=0 to List.count-1 do
- begin
-   v.x:=surf.vertices[integer(List[i])].x-cx;
-   v.y:=surf.vertices[integer(List[i])].y-cy;
-   v.z:=surf.vertices[integer(List[i])].z-cz;
-   normalize(v);
-   normalize(Fvec);
-   dp:= NJEDGetVAngle(Fvec.x,Fvec.y,Fvec.z, v.x,v.y,v.z);
-   if dp < 90 then Top_refIndex:=i;
- end;
-
 
 minx:=0; miny:=0;minz:=0;
  maxx:=0; maxy:=0;maxz:=0;
@@ -3810,7 +3307,7 @@ Procedure DeleteSector(Lev:TJKLevel;n:integer);
 var sec:TJKSector;
 begin
  sec:=Lev.Sectors[n];
- SaveSecUndo(sec,ch_deleted,sc_both);
+ SaveSecUndo(sec,ch_deleted,sc_both);    //error
 
  Lev.Sectors.Delete(n);
  RemoveSecRefs(Lev,sec,rs_surfs);
@@ -4916,14 +4413,6 @@ begin
  cz:=sz/sec.vertices.count;
 end;
 
-Procedure NJEDCalcSecCenter(sec:TJKSector; var cx,cy,cz:double);
-var
-  secbb:Tbox;
-begin
-  FindBBox(sec,secbb);
-  cx:=(secbb.x1+secbb.x2)/2;  cy:=(secbb.y1+secbb.y2)/2; cz:=(secbb.z1+secbb.z2)/2;
-end;
-
 Procedure SysCalcSurfData(surf:TJKSurface;var xv,yv:Tvector;
                         var minx,miny,maxx,maxy:double);
 var
@@ -5006,8 +4495,6 @@ begin
  cy:=ysum/surf.Vertices.Count;
  cz:=zsum/surf.Vertices.Count;
 end;
-
-
 
 Procedure CalcSurfCenter(surf:TJKSurface;var cx,cy,cz:double);
 var xv,yv:Tvector;

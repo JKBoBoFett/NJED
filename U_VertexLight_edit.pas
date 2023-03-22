@@ -1,28 +1,30 @@
+//NJED 09/12/22
 unit U_VertexLight_edit;
 
 interface
 
 uses
-  Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, Grids, ExtCtrls, u_undo, render,Jed_Main,J_Level,Geometry,misc_utils;
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
+  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.Grids,J_Level,Geometry,misc_utils,
+  Vcl.ExtCtrls, Vcl.StdCtrls, u_undo, render;
 
 type
   TVertexLight = class(TForm)
-    Panel1: TPanel;
     SGValues: TStringGrid;
+    Panel1: TPanel;
     BNSet: TButton;
     CBVertex0_Master: TCheckBox;
-    procedure FormShow(Sender: TObject);
-    procedure FormCreate(Sender: TObject);
-    procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure BNSetClick(Sender: TObject);
     procedure SGValuesSelectCell(Sender: TObject; ACol, ARow: Integer;
       var CanSelect: Boolean);
+    procedure FormShow(Sender: TObject);
+    procedure FormCreate(Sender: TObject);
+    procedure FormClose(Sender: TObject; var Action: TCloseAction);
   private
     { Private declarations }
   public
     { Public declarations }
-    Procedure LoadSurface();
+     Procedure LoadSurface();
   end;
 
 var
@@ -33,8 +35,9 @@ implementation
 
 {$R *.dfm}
 
+uses Jed_Main;
 procedure TVertexLight.BNSetClick(Sender: TObject);
- var
+var
  i:integer;
  txv:TTXVertex;
 begin
@@ -71,9 +74,8 @@ end;
 
 procedure TVertexLight.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
- JedMain.SelectedSurfaceVertex:=0;
- JedMain.SurfaceVertexLightMode:=false;
- JedMain.redraw;
+  JedMain.SelectedSurfaceVertex:=0;
+  JedMain.SurfaceVertexLightMode:=false;
 end;
 
 procedure TVertexLight.FormCreate(Sender: TObject);
@@ -112,8 +114,10 @@ end;
 procedure TVertexLight.SGValuesSelectCell(Sender: TObject; ACol, ARow: Integer;
   var CanSelect: Boolean);
 begin
- JedMain.SelectedSurfaceVertex:=Arow;
- JedMain.ReDraw;
+JedMain.SelectedSurfaceVertex:=Arow;
+JedMain.ReDraw;
+//  With level.Sectors[JedMain.Cur_SC].surfaces[JedMain.Cur_SF].Vertices[ARow] do
+ //  JedMain.Renderer.DrawVertex(x,y,z);
 end;
 
 end.
