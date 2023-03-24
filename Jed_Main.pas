@@ -281,6 +281,10 @@ type
     procedure CutsceneHelper1Click(Sender: TObject);
     procedure N3DOHierarchy1Click(Sender: TObject);
     procedure ExportSectorsasOBJ1Click(Sender: TObject);
+    procedure FormMouseWheelDown(Sender: TObject; Shift: TShiftState;
+      MousePos: TPoint; var Handled: Boolean);
+    procedure FormMouseWheelUp(Sender: TObject; Shift: TShiftState;
+      MousePos: TPoint; var Handled: Boolean);
   public
     {fps NJED}
     SelectedSurfaceVertex : Integer;
@@ -549,7 +553,7 @@ type
     Procedure AddThingAtXYZPYR(x,y,z,pch,yaw,rol:double);
     Procedure SetHideLights(hide:boolean);
     Procedure SetHideThings(hide:boolean);
-    
+
       protected
 
      procedure CreateParams(var Params: TCreateParams); override;
@@ -1492,7 +1496,7 @@ begin
 
  if Shift=[ssCtrl,ssAlt] then
  case key of
-  ord('Z'): snaptoy:=not snaptoy; 
+  ord('Z'): snaptoy:=not snaptoy;
  end;
 
  if Shift=[ssShift] then
@@ -2200,7 +2204,7 @@ end;
 Procedure TJedMain.Do_ProceedCleave(X,Y:integer;snaptovertex:boolean);
 var
  fx,fy,fz,lx,ly,lz,px,py,pz:double;
- 
+
 begin
   if not CleaveStarted then exit;
 
@@ -2889,7 +2893,13 @@ var
     t:TJKThing;
 begin
 case Mouse_mode of
- MM_SELECT:;
+    MM_Select:
+      if Button = TMouseButton.mbMiddle then
+      begin
+        if GetMousePos(X, Y) then
+          Do_StartRotateCam(X, Y);
+        exit
+      end;
  MM_Cleave: DO_StartCleave(X,Y,ssShift in Shift);
  MM_CreateSector: DO_StartCreateSC(X,Y,ssShift in Shift);
 end;
@@ -2903,11 +2913,34 @@ begin
               Do_SelectAt(X,Y,ssAlt in Shift);
               if ssShift in Shift then DO_MultiSelect;
              end;
+  MM_RotateCam:
+      if Button = TMouseButton.mbMiddle then
+        SetMouseMode(MM_Select);
   MM_CreateSector: DO_EndCreateSC(X,Y,ssShift in Shift);
   MM_DRAG: DO_EndDrag(X,Y);
   MM_Cleave: DO_EndCleave(LastX,LastY,ssShift in Shift);
   MM_RectSelect: DO_EndRectSelect(X,Y);
  end;
+end;
+
+procedure TJedMain.FormMouseWheelDown(Sender: TObject; Shift: TShiftState;
+  MousePos: TPoint; var Handled: Boolean);
+begin
+    With Renderer do
+    begin
+       Renderer.scale:=Renderer.scale*1.5;
+    end;
+    Invalidate;
+end;
+
+procedure TJedMain.FormMouseWheelUp(Sender: TObject; Shift: TShiftState;
+  MousePos: TPoint; var Handled: Boolean);
+begin
+    With Renderer do
+    begin
+      Renderer.scale:=Renderer.scale/1.5;
+    end;
+    Invalidate;
 end;
 
 procedure TJedMain.FormMouseMove(Sender: TObject; Shift: TShiftState; X,
@@ -3262,7 +3295,7 @@ begin
            for fr:=0 to thing.vals.count-1 do
            if thing.Vals[fr].atype=at_frame then
             frsel.addFR(th,fr);
-          end; 
+          end;
          end;
  end;
 end;
@@ -3425,7 +3458,7 @@ Function TJedMain.GetTargetJKLName:string;
 begin
  if CompareText(ExtractFileExt(LevelFile),'.jkl')=0 then
   begin result:=LevelFile; exit; end;
-  
+
  Result:=ProjectDir+'jkl\'+ChangeFileExt(ExtractFileName(LevelFile),'.jkl');
 end;
 
@@ -5835,7 +5868,7 @@ begin
   n:=0;
   for j:=0 to a3DO.meshes.count-1 do
    if CompareText(hnode.nodename,a3DO.meshes[j].Name)=0 then inc(n);
-  if n=0 then hnode.nmesh:=-1; 
+  if n=0 then hnode.nmesh:=-1;
  end;
 
 end;
@@ -5965,7 +5998,7 @@ begin
            sfsel.clear;
           end;
   MM_ED: begin
-          StartUndorec('Cleave Edge'); 
+          StartUndorec('Cleave Edge');
         {CLeaved:=}CleaveEdge(Level.Sectors[Cur_SC].Surfaces[Cur_SF],
                    Cur_ED,norm,x,y,z);
          end;
@@ -6196,7 +6229,7 @@ begin
   LoadDetails(ni,dir+s+'.dsc');
 
   mi.Add(ni);
-  
+
   end;
   res:=FindNext(sr);
  end;
