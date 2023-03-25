@@ -210,7 +210,7 @@ var Fi:TFInfo;
     ge:TGobEntry;
     gn:TNEntries;
     f:TFile;
-  begin
+begin
  ClearIndex;
  f:=OpenFileRead(name,0);
 Try
@@ -218,9 +218,8 @@ Try
 
  if gh.magic<>'GOB'#10 then raise Exception.Create(Name+' is not a GOB file');   // njed 8/22
 
-F.FSeek(gh.index_ofs);
+ F.FSeek(gh.index_ofs);
  F.FRead(gn,sizeof(gn));
-
  for i:=0 to gn-1 do
  begin
   F.FRead(ge,sizeof(ge));

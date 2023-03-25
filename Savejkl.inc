@@ -111,7 +111,7 @@ var t:textfile;
 
 Procedure WriteFmt(const fmt:string;vals:array of const);
 begin
- Writeln(t,Sprintf(fmt,vals ) );
+ Writeln(t,Sprintf(fmt,vals));
 end;
 
 Procedure WriteS(const s:string);

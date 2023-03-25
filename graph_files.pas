@@ -474,6 +474,8 @@ begin
    begin
     msize:=msize+w*h;
     if mh.numbits=16 then msize:=msize*2;
+    if mh.numbits=24 then msize:=msize*3;
+    if mh.numbits=32 then msize:=msize*4;
     w:=w div 2;
     h:=h div 2;
    end;
@@ -484,8 +486,10 @@ begin
 
   F.Fseek(txoffs);
 
-  if mh.numBits=16 then  FInfo.StoredAs:=ByLines16 else
-  FInfo.StoredAs:=ByLines;
+  if mh.numBits=16 then  FInfo.StoredAs:=ByLines16
+   else if mh.numBits=24 then FInfo.StoredAs:=ByLines24
+   else if mh.numBits=32 then FInfo.StoredAs:=ByLines32
+   else FInfo.StoredAs:=ByLines;
  end;
 
  isAnimated:=(mh.NumOfTextures>1) and (not IsColor);
@@ -499,6 +503,7 @@ begin
   exit;
  end;
  if mh.numBits=16 then F.Fread(buf,FInfo.width*FInfo.Height*2)
+ else if mh.numBits=24 then F.Fread(buf,FInfo.width*FInfo.Height*3)
  else F.Fread(buf,FInfo.width*FInfo.Height);
 end;
 
@@ -510,6 +515,8 @@ begin
   exit;
  end;
  if mh.numBits=16 then F.Fread(buf,FInfo.width*2)
+ else if mh.numBits=24 then F.Fread(buf,FInfo.width*3)
+ else if mh.numBits=32 then F.Fread(buf,FInfo.width*4)
  else F.Fread(buf,FInfo.width);
 end;
 

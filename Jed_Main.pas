@@ -283,8 +283,8 @@ type
     procedure ExportSectorsasOBJ1Click(Sender: TObject);
   public
     {fps NJED}
-    SelectedSurfaceVertex : Integer;
-    SurfaceVertexLightMode : boolean;
+    SelectedSurfaceVertex : Integer;   //NJED
+    SurfaceVertexLightMode : boolean;  //NJED
 
     StartTick : Cardinal;
     Frames    : Integer;
@@ -648,22 +648,64 @@ begin
 
  With Sec do
  begin
- surf:=NewSurface; sec.surfaces.Add(surf); surf.surfflags:=surf.surfflags or SF_Floor;
- Surf.AddVertex(vertices[0]);Surf.AddVertex(vertices[1]);Surf.AddVertex(vertices[2]);Surf.AddVertex(vertices[3]);
- surf:=NewSurface; sec.surfaces.Add(surf);
- Surf.AddVertex(vertices[4]);Surf.AddVertex(vertices[5]);Surf.AddVertex(vertices[6]);Surf.AddVertex(vertices[7]);
+ //surface 0
+ surf:=NewSurface;
+ sec.surfaces.Add(surf);
+ surf.surfflags:=surf.surfflags or SF_Floor;
+ Surf.AddVertex(vertices[0]);
+ Surf.AddVertex(vertices[1]);
+ Surf.AddVertex(vertices[2]);
+ Surf.AddVertex(vertices[3]);
 
- surf:=NewSurface; sec.surfaces.Add(surf);
- Surf.AddVertex(vertices[2]);Surf.AddVertex(vertices[6]);Surf.AddVertex(vertices[5]);Surf.AddVertex(vertices[3]);
+ //surface 1
+// #1:	72	0x4	0x4	4	3	1	-1	0	4 4,0 5,1 6,2 7,3 5 5 5 5
+//  1:	72	0x4	0x4	4	3	1	-1	0	4 5,1 6,2 7,3 4,0 5 5 5 5
+ surf:=NewSurface;
+ sec.surfaces.Add(surf);
+ Surf.AddVertex(vertices[5]);
+ Surf.AddVertex(vertices[6]);
+ Surf.AddVertex(vertices[7]);
+ Surf.AddVertex(vertices[4]);
 
- surf:=NewSurface; sec.surfaces.Add(surf);
- Surf.AddVertex(vertices[1]);Surf.AddVertex(vertices[7]);Surf.AddVertex(vertices[6]);Surf.AddVertex(vertices[2]);
+ //surface 2
+// #2:	72	0x4	0x4	4	3	1	-1	0	4 2,0 6,4 5,5 3,3 5 5 5 5
+//  2:	72	0x4	0x4	4	3	1	-1	0	4 5,5 3,3 2,0 6,4 5 5 5 5
+ surf:=NewSurface;
+ sec.surfaces.Add(surf);
+ Surf.AddVertex(vertices[5]);
+ Surf.AddVertex(vertices[3]);
+ Surf.AddVertex(vertices[2]);
+ Surf.AddVertex(vertices[6]);
 
- surf:=NewSurface; sec.surfaces.Add(surf);
- Surf.AddVertex(vertices[0]);Surf.AddVertex(vertices[4]);Surf.AddVertex(vertices[7]);Surf.AddVertex(vertices[1]);
+ //surface 3
+// #3:	72	0x4	0x4	4	3	1	-1	0	4 1,0 7,4 6,5 2,3 5 5 5 5
+//  3:	72	0x4	0x4	4	3	1	-1	0	4 6,5 2,3 1,0 7,4 5 5 5 5
+ surf:=NewSurface;
+ sec.surfaces.Add(surf);
+ Surf.AddVertex(vertices[6]);
+ Surf.AddVertex(vertices[2]);
+ Surf.AddVertex(vertices[1]);
+ Surf.AddVertex(vertices[7]);
 
- surf:=NewSurface; sec.surfaces.Add(surf);
- Surf.AddVertex(vertices[3]);Surf.AddVertex(vertices[5]);Surf.AddVertex(vertices[4]);Surf.AddVertex(vertices[0]);
+ //surface 4
+// #4:	72	0x4	0x4	4	3	1	-1	0	4 0,0 4,4 7,5 1,3 5 5 5 5
+//  4:	72	0x4	0x4	4	3	1	-1	0	4 7,5 1,3 0,0 4,4 5 5 5 5
+ surf:=NewSurface;
+ sec.surfaces.Add(surf);
+ Surf.AddVertex(vertices[7]);
+ Surf.AddVertex(vertices[1]);
+ Surf.AddVertex(vertices[0]);
+ Surf.AddVertex(vertices[4]);
+
+ //surface 5
+// #5:	72	0x4	0x4	4	3	1	-1	0	4 3,0 5,4 4,5 0,3 5 5 5 5
+//  5:	72	0x4	0x4	4	3	1	-1	0	4 4,5 0,3 3,0 5,4 5 5 5 5
+ surf:=NewSurface;
+ sec.surfaces.Add(surf);
+ Surf.AddVertex(vertices[4]);
+ Surf.AddVertex(vertices[0]);
+ Surf.AddVertex(vertices[3]);
+ Surf.AddVertex(vertices[5]);
  end;
 
  th:=Level.NewThing; Level.Things.Add(th);
@@ -915,7 +957,7 @@ var s,th:integer;
     wx,wy,sc,sf,vx,ed,fr:integer;
     obj:TObject;
     txv:TTXVertex;
-    VertexLight:single;
+    VertexLight:single; //NJED
 begin
  if not visible then exit;
 try
@@ -1147,6 +1189,7 @@ end;
           Renderer.SetCulling(r_CULLFRONT);
           Renderer.DrawPolygon(level.Sectors[Cur_SC].surfaces[Cur_SF]);
 
+        //  With level.Sectors[Cur_SC].surfaces[Cur_SF].Vertices[0] do Renderer.DrawVertex(x,y,z);
           if SurfaceVertexLightMode=false then
          With level.Sectors[Cur_SC].surfaces[Cur_SF].Vertices[0] do Renderer.DrawVertex(x,y,z);
 
@@ -1161,7 +1204,6 @@ end;
               Renderer.DrawCircle(x,y,z,VertexLight);
              end;
            end;
-       //    Renderer.DrawCircle(x,y,z,1);
       //    for s:=0 to level.Sectors[Cur_SC].surfaces[Cur_SF].TXVertices.Count-1 do
       //     begin
       //        txv:= level.Sectors[Cur_SC].surfaces[Cur_SF].TXVertices.GetItem(s);
@@ -1264,8 +1306,6 @@ var sec:TJKSector;
     v:Tvertex;
     i:integer;
 begin
- SelectedSurfaceVertex:=0;//NJED
-
  Application.OnException:=ExceptHandler;
 
  MUSnapGridTo.Caption:=MUSnapGridTo.Caption+#9'Shft+S';
@@ -1836,6 +1876,7 @@ begin
              MM_LT: BringLightToSurf(cur_LT,cur_SC,Cur_SF);
             end;
   VK_MULTIPLY: SetViewToGrid;
+  VK_DIVIDE: SetGridToView;
   Ord('E'): SetMapMode(MM_ED);
   Ord('X'): if map_mode=MM_SF then
             begin
@@ -1862,7 +1903,7 @@ begin
   Ord('N'): NextObject;
   Ord('P'): PreviousObject;
   Ord('U'): UseInCog;
-  Ord('Q'): LoadDLLPlugin('h:\rr\mv\mv.dll');
+ // Ord('Q'): LoadDLLPlugin('h:\rr\mv\mv.dll');
   Ord('M'): begin
             case Map_mode of
              MM_SC: begin
@@ -2948,8 +2989,13 @@ var a3DO:T3DO;
     face:T3DOFace;
     tv:TTXVertex;
     hnode:THNode;
+    ResetOffsets:boolean;
 begin
- a3DO:=T3DO.CreateFrom3DO(name,0);
+  ResetOffsets:=true;
+  //If MsgBox('Reset 3do node pivots and mesh offsets on import? ','I got a question',mb_YesNo)=idNo then ResetOffsets:=false;
+
+
+ a3DO:=T3DO.CreateFrom3DO(name,ResetOffsets,0);
  Level.Clear;
 try
  for i:=0 to a3DO.Meshes.count-1 do
@@ -3004,9 +3050,9 @@ begin
  hnode:=level.New3DONode;
  hnode.Assign(a3DO.hnodes[i]);
  level.h3donodes.Add(hnode);
- hnode.pivotx:=0;
- hnode.pivoty:=0;
- hnode.pivotz:=0;
+// hnode.pivotx:=0;
+// hnode.pivoty:=0;
+// hnode.pivotz:=0;
 end;
 
 finally
@@ -5408,6 +5454,8 @@ procedure TJedMain.SaveJKLGOBandTest1Click(Sender: TObject);
 var gobname,batname,ext:string;
     t:TextFile;
     pdir:array[0..255] of char;
+    prjdir,name:string;
+    pathL:integer;
 begin
  If MsgBox('You''re about to test your level. Proceed?','Warning',mb_YesNo)=idNo then exit;
 
@@ -5418,18 +5466,28 @@ begin
    begin
     if IsMots then ext:='jkm.exe' else ext:='jk.exe';
 
-    if SysUtils.FileExists(GameDir+'inject.exe') then
-     begin
-       ext:='inject.exe';
-     end;
+    if FileExists(GameDir+'inject.exe') then ext:='inject.exe';
 
-    if Pos(' ',ProjectDir)=0 then StrLCopy(pdir,Pchar(ProjectDir),sizeof(pdir))
-    else GetShortPathName(pchar(ProjectDir),pdir,sizeof(pdir));
+    //if Pos(' ',ProjectDir)=0 then StrLCopy(pdir,Pchar(ProjectDir),sizeof(pdir))
+    //else
+     //GetShortPathName(pchar(ProjectDir),pdir,sizeof(pdir));
+      prjdir:=SysUtils.ExtractShortPathName(ProjectDir);
+
+      name:=ExtractFileName(ExcludeTrailingPathDelimiter(prjdir));
+      pathL:= length(name);
+
+      //NJed 10/22/22
+      if  (Pos(' ',prjdir)>0) or (pathL >8) then
+      begin
+        If MsgBox('Project path must be in 8:3 format.'+#13
+             +'Check if 8:3 filenames are enabled in project direcory with dos cmd dir /x.'+#13
+             +'Proceed?','Warning',mb_YesNo)=idNo then exit;
+      end;
 
     AssignFile(t,batname); Rewrite(t);
     Writeln(t,ExtractFileDrive(GameDir));
     Writeln(t,'cd "',GameDir,'"');
-    Writeln(t,ext,' -verbose 2 -windowgui -devmode -dispstats -debug log -displayconfig -path '+Pdir);
+    Writeln(t,ext,' -verbose 2 -windowgui -devmode -dispstats -debug log -displayconfig -path '+prjdir);
     CloseFile(t);
    end;
 

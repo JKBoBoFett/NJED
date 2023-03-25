@@ -42,7 +42,7 @@ Type
  PSFVX=^TSFVX;
 
  PSecRec=^TSecRec;
- TSecRec= record
+ TSecRec=record
   Flags:longint;
   Ambient:single;
   extra:single;
@@ -56,7 +56,7 @@ Type
 
  PSurfRec=^TSurfRec;
 
- TSurfRec= record
+ TSurfRec=record
   AdjSC,AdjSF:SmallInt;
   AdjoinFlags:Longint;
   Material:array[0..47] of char;
@@ -216,6 +216,8 @@ end;
   Constructor Create;
   Destructor Destroy;override;
  end;
+
+
 
 var
   UndoStack:TList;
@@ -844,6 +846,8 @@ begin
  JedMain.SectorChanged(sec);
 
 end;
+
+
 
 Procedure TSecGeoUndo.SaveUndo(obj:TObject;ch:integer);
 type

@@ -56,18 +56,17 @@ type
     SGFields: TStringGrid;
     PNButtons: TPanel;
     Panel2: TPanel;
+    ColorDlg: TColorDialog;
     BNAdd: TButton;
     BNRemove: TButton;
     BNAsFrame: TButton;
     CBOnTop: TCheckBox;
+    LBCogs: TListBox;
+    Panel3: TPanel;
     LBText: TLabel;
     BNPaste: TButton;
-    ColorDlg: TColorDialog;
     PNLight: TPanel;
     BNlight: TButton;
-    Panel1: TPanel;
-    Panel3: TPanel;
-    LBCogs: TListBox;
     BNTools: TButton;
     procedure FormCreate(Sender: TObject);
     procedure FormActivate(Sender: TObject);
@@ -199,7 +198,7 @@ case ID of
             Result:=ValHex(s,f);
             if Result then sec.Flags:=f;
            end;
- ID_AMBIENT:begin
+ID_AMBIENT:begin
             Result:=ValDouble(s,d);
             if Result then sec.ambient:=d;
             exit;
@@ -278,20 +277,13 @@ end;
 end;
 
 Procedure TItemEdit.LoadSurface(surf:TJKSurface);
-var
- ast:string;
- v:integer;
- TVLight:single;
+var ast:string;
 begin
-
-
-
-
  Caption:=Format('Sector %d Surface %d',[Surf.Sector.Num,Surf.Num]);
  ResetEdit;
 
- PNLight.Visible:=true;
- BNlight.Visible:=true;
+ PNLight.Visible:=true;  //NJED
+ BNlight.Visible:=true;  //NJED
 
   LBText.Caption:=Format('%d Vertices',
   [surf.vertices.count]);
@@ -311,7 +303,7 @@ begin
  fe.AddFieldHex('+ADJOIN FLAGS',ID_AdjFlags,AdjoinFlags);
  fe.AddFieldHex('+SURF FLAGS',ID_SurfFlags,SurfFlags);
  fe.AddFieldHex('+FACE FLAGS',ID_FaceFlags,FaceFlags);
- fe.AddFieldFloat('LIGHT',ID_light,TVLight); //NJED 9/11/22
+{ fe.AddFieldFloat('LIGHT',ID_light,TVLight);} //NJED 9/11/22
  fe.AddFieldFloat('EXTRA LIGHT',ID_SF_extra,extraLight);
 end;
 
@@ -955,8 +947,9 @@ begin
  BNPaste.Visible:=false;
  LBCogs.Items.Clear;
  LBText.Caption:='';
- PNLight.Visible:=false;
- BNlight.Visible:=false;
+
+ PNLight.Visible:=false;  //NJED
+ BNlight.Visible:=false;  //NJED
 end;
 
 procedure TItemEdit.FormActivate(Sender: TObject);

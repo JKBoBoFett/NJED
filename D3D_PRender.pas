@@ -363,7 +363,7 @@ begin
  DisableFPUExceptions;
  DXFailCheck(Direct3DRMCreate(FD3DRM),'in Initialize');
 
- DDBD:=DDBD_8+DDBD_16+DDBD_24;
+ DDBD:=DDBD_8+DDBD_16+DDBD_24+DDBD_32;
  dc := GetDC(WHandle);
  FBPP := GetDeviceCaps(dc, BITSPIXEL);
  ReleaseDC(WHandle, dc);

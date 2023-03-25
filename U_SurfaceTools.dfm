@@ -1,62 +1,52 @@
 object SurfaceTools: TSurfaceTools
+  AlignWithMargins = True
   Left = 0
   Top = 0
-  HorzScrollBar.Visible = False
-  BorderStyle = bsToolWindow
+  BorderStyle = bsSizeToolWin
   Caption = 'SurfaceTools'
-  ClientHeight = 292
-  ClientWidth = 158
+  ClientHeight = 287
+  ClientWidth = 156
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
-  Font.Height = -13
-  Font.Name = 'MS Sans Serif'
+  Font.Height = -11
+  Font.Name = 'Tahoma'
   Font.Style = []
-  OldCreateOrder = True
-  Position = poOwnerFormCenter
-  Scaled = False
-  StyleElements = []
-  PixelsPerInch = 120
-  TextHeight = 16
+  FormStyle = fsStayOnTop
+  OldCreateOrder = False
+  Position = poMainFormCenter
+  PixelsPerInch = 96
+  TextHeight = 13
   object Label1: TLabel
-    Left = 15
-    Top = 79
-    Width = 35
-    Height = 16
+    Left = 18
+    Top = 17
+    Width = 25
+    Height = 13
     Caption = 'Scale'
   end
   object Label3: TLabel
-    Left = 16
-    Top = 118
-    Width = 34
-    Height = 16
-    Caption = 'Move'
-  end
-  object Memo1: TMemo
-    Left = 6
-    Top = 358
-    Width = 203
-    Height = 78
-    Lines.Strings = (
-      'Memo1')
-    ScrollBars = ssVertical
-    TabOrder = 0
+    Left = 8
+    Top = 106
+    Width = 93
+    Height = 13
+    Caption = 'Move allong Normal'
   end
   object Info_Button: TButton
-    Left = 8
-    Top = 335
-    Width = 75
-    Height = 17
-    Caption = 'Surface Info'
-    TabOrder = 1
+    Left = 21
+    Top = 231
+    Width = 99
+    Height = 23
+    Caption = 'Pan Surface Info'
+    TabOrder = 0
+    OnClick = Info_ButtonClick
   end
   object GroupBox1: TGroupBox
-    Left = 8
-    Top = 24
-    Width = 153
+    Left = 405
+    Top = 54
+    Width = 119
     Height = 41
-    TabOrder = 2
-    object CheckBox1: TCheckBox
+    TabOrder = 1
+    object XCB: TCheckBox
       Left = 20
       Top = 15
       Width = 31
@@ -66,7 +56,7 @@ object SurfaceTools: TSurfaceTools
       State = cbChecked
       TabOrder = 0
     end
-    object CheckBox2: TCheckBox
+    object YCB: TCheckBox
       Left = 52
       Top = 15
       Width = 28
@@ -76,7 +66,7 @@ object SurfaceTools: TSurfaceTools
       State = cbChecked
       TabOrder = 1
     end
-    object CheckBox3: TCheckBox
+    object ZCB: TCheckBox
       Left = 84
       Top = 15
       Width = 31
@@ -88,38 +78,39 @@ object SurfaceTools: TSurfaceTools
     end
   end
   object Edit3: TEdit
-    Left = 416
-    Top = 41
+    Left = 411
+    Top = 27
     Width = 41
-    Height = 24
-    TabOrder = 3
+    Height = 21
+    TabOrder = 2
     Text = '.1'
   end
   object Edit1: TEdit
-    Left = 416
-    Top = 11
+    Left = 411
+    Top = -3
     Width = 41
-    Height = 24
-    TabOrder = 4
+    Height = 21
+    TabOrder = 3
     Text = '1'
   end
   object Scale_UpDown: TUpDown
-    Left = 119
-    Top = 68
+    Left = 113
+    Top = 8
     Width = 20
     Height = 25
     Min = 1
     Max = 2000
     Position = 1000
-    TabOrder = 5
+    TabOrder = 4
+    OnClick = Scale_UpDownClick
   end
   object Scale_ComboBox: TComboBox
-    Left = 56
-    Top = 71
+    Left = 49
+    Top = 8
     Width = 58
-    Height = 24
+    Height = 21
     ItemIndex = 10
-    TabOrder = 6
+    TabOrder = 5
     Text = '.1'
     Items.Strings = (
       '.9'
@@ -147,39 +138,32 @@ object SurfaceTools: TSurfaceTools
       '.0005')
   end
   object Move_UpDown: TUpDown
-    Left = 56
-    Top = 110
+    Left = 111
+    Top = 94
     Width = 20
     Height = 25
     Min = 1
     Max = 200
     Position = 100
-    TabOrder = 7
-  end
-  object Collapse_Button: TButton
-    Left = 17
-    Top = 160
-    Width = 59
-    Height = 25
-    Caption = 'Collapse'
-    TabOrder = 8
+    TabOrder = 6
+    OnClick = Move_UpDownClick
   end
   object Inset_Button: TButton
-    Left = 75
-    Top = 201
-    Width = 48
+    Left = 78
+    Top = 138
+    Width = 59
     Height = 25
     Caption = 'Inset'
-    TabOrder = 9
+    TabOrder = 7
     OnClick = Inset_ButtonClick
   end
   object Inset_ComboBox: TComboBox
-    Left = 14
-    Top = 202
+    Left = 17
+    Top = 140
     Width = 55
-    Height = 24
+    Height = 21
     ItemIndex = 4
-    TabOrder = 10
+    TabOrder = 8
     Text = '.5'
     Items.Strings = (
       '.9'
@@ -207,20 +191,39 @@ object SurfaceTools: TSurfaceTools
       '.0005')
   end
   object Extrude_Button: TButton
-    Left = 73
-    Top = 240
-    Width = 50
+    Left = 78
+    Top = 177
+    Width = 59
     Height = 25
     Caption = 'Extrude'
-    TabOrder = 11
+    TabOrder = 9
     OnClick = Extrude_ButtonClick
   end
   object EDextrude: TEdit
-    Left = 12
-    Top = 241
-    Width = 60
-    Height = 24
-    TabOrder = 12
+    Left = 18
+    Top = 179
+    Width = 54
+    Height = 21
+    TabOrder = 10
     Text = '.5'
+  end
+  object Memo1: TMemo
+    Left = 21
+    Top = 355
+    Width = 203
+    Height = 78
+    Lines.Strings = (
+      'Memo1')
+    ScrollBars = ssVertical
+    TabOrder = 11
+  end
+  object Collapse_Button: TButton
+    Left = 78
+    Top = 52
+    Width = 59
+    Height = 25
+    Caption = 'Collapse'
+    TabOrder = 12
+    OnClick = Collapse_ButtonClick
   end
 end

@@ -6,7 +6,7 @@ interface
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
   StdCtrls, FileCtrl, ComCtrls, misc_utils, ExtCtrls, Buttons, D3D_PRender,
-  FieldEdit, J_Level,tbar_tools;
+  FieldEdit, J_Level,tbar_tools,U_tbar;
 
 type
   TOptions = class(TForm)
@@ -68,6 +68,8 @@ type
     CBConfRevert: TCheckBox;
     PToolbar: TTabSheet;
     Edit_UndoLevel: TEdit;
+    CBInvertMouselookY: TCheckBox;
+    btn_ShowGridSetp: TButton;
     procedure BNOKClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure SBHelpClick(Sender: TObject);
@@ -77,6 +79,7 @@ type
     procedure LBColorsDblClick(Sender: TObject);
     procedure CBAutoSaveClick(Sender: TObject);
     procedure Edit_UndoLevelExit(Sender: TObject);
+    procedure btn_ShowGridSetpClick(Sender: TObject);
   private
     { Private declarations }
     ctls:TList;
@@ -144,7 +147,7 @@ end;
 const
  NoKey:boolean=false;
 
-RegValues:array[0..76] of TRegValue=(
+RegValues:array[0..77] of TRegValue=(
 (d_type:dt_str; RegName:'JKDir'; data:@JKDir; onExit:false),
 (d_type:dt_str; RegName:'CDDir'; data:@JKCDDir; onExit:false),
 (d_type:dt_str; RegName:'MOTSDir'; data:@MOTSDir; onExit:false),
@@ -222,6 +225,7 @@ RegValues:array[0..76] of TRegValue=(
 (d_type:dt_bool; RegName:'NewOnFloor'; data:@NewOnFloor; onExit:false),
 
 (d_type:dt_bool; RegName:'UndoEnabled'; data:@UndoEnabled; onExit:false),
+(d_type:dt_bool; RegName:'InvertMouselookY'; data:@InvertMouselookY; onExit:false),
 (d_type:dt_bool; RegName:'MoveFrames'; data:@MoveFrames; onExit:false),
 (d_type:dt_bool; RegName:'GOBSmart'; data:@GOBSmart; onExit:false),
 (d_type:dt_bool; RegName:'CheckOverlaps'; data:@CheckOverlaps; onExit:false),
@@ -316,6 +320,12 @@ procedure TOptions.BNOKClick(Sender: TObject);
 begin
  ModalResult:=mrOK;
  Hide;
+end;
+
+procedure TOptions.btn_ShowGridSetpClick(Sender: TObject);
+begin
+Toolbar.Show;
+Toolbar.PGStuff.ActivePage:=Toolbar.PerShift;
 end;
 
 (*Procedure WriteSettings;
@@ -541,6 +551,7 @@ begin
 
  NewCtl(@NewOnFloor,dt_bool,CBThingsOnFloor);
  NewCtl(@UndoEnabled,dt_bool,CBUndo);
+ NewCtl(@InvertMouselookY,dt_bool,CBInvertMouselookY);
  NewCtl(@MoveFrames,dt_bool,CBMoveFrames);
  NewCtl(@GobSmart,dt_bool,CBGobSmart);
  NewCtl(@CheckOverlaps,dt_bool,CBCheckOverlaps);

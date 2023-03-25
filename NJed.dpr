@@ -1,15 +1,10 @@
 program NJed;
-  {$DYNAMICBASE OFF}
 
 
 
-
-   {$MAXSTACKSIZE 16777216}
-{$R 'NJed1.res' 'NJed1.rc'}
 {$R *.dres}
 
 uses
-  //FastMM5 in 'FastMM5\FastMM5.pas',
   Windows,
   Forms,
   Jed_Main in 'Jed_Main.pas' {JedMain},
@@ -100,21 +95,24 @@ uses
   U_uvedit in 'U_uvedit.pas' {UVEdit},
   U_ObjImportOptions in 'U_ObjImportOptions.pas' {objImportOptions},
   OBJ_export in 'OBJ_export.pas' {ObjExport},
-//  FastMM4DataCollector in 'FastMM4\FastMM4DataCollector.pas',
-//  FastMM4LockFreeStack in 'FastMM4\FastMM4LockFreeStack.pas',
-//  FastMM4Messages in 'FastMM4\FastMM4Messages.pas',
   U_VertexLight_edit in 'U_VertexLight_edit.pas' {VertexLight},
-  U_SurfaceTools in 'U_SurfaceTools.pas' {SurfaceTools};
+  U_SurfaceTools in 'U_SurfaceTools.pas' {SurfaceTools},
+  UV_utils in 'UV_utils.pas',
+  MatThumbNails in 'MatThumbNails.pas' {frmThumbNails},
+  GameImageList in 'GameImageList.pas',
+  U_MatToBmpThread in 'U_MatToBmpThread.pas';
 
 {$R *.RES}
 {$R Ver_info.res}
 
-{$SETPEFLAGS IMAGE_FILE_REMOVABLE_RUN_FROM_SWAP or IMAGE_FILE_NET_RUN_FROM_SWAP
-	          or IMAGE_FILE_LARGE_ADDRESS_AWARE
-	          or IMAGE_FILE_RELOCS_STRIPPED}
 
+{$SETPEFLAGS IMAGE_FILE_LARGE_ADDRESS_AWARE
+	          or IMAGE_FILE_RELOCS_STRIPPED}
 begin
-//FastMM4.FullDebugModeScanMemoryPoolBeforeEveryOperation := true;
+
+
+//  {$INCLUDE FastMM4\FastMM4Options.inc}
+
   Application.Initialize;
   Application.Title := 'NJED';
   Application.CreateForm(TJedMain, JedMain);
@@ -147,9 +145,11 @@ begin
   Application.CreateForm(TKeyForm, KeyForm);
   Application.CreateForm(TUrqForm, UrqForm);
   Application.CreateForm(TUVEdit, UVEdit);
+  Application.CreateForm(TUVEdit, UVEdit);
   Application.CreateForm(TobjImportOptions, objImportOptions);
   Application.CreateForm(TObjExport, ObjExport);
   Application.CreateForm(TVertexLight, VertexLight);
   Application.CreateForm(TSurfaceTools, SurfaceTools);
+  Application.CreateForm(TfrmThumbNails, frmThumbNails);
   Application.Run;
 end.

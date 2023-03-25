@@ -59,8 +59,9 @@ T3DO=class
  Mats:TStringList;
  Meshes:T3DOMeshes;
  hnodes:THNodes;
+ ResetO:boolean;
  Constructor CreateNew;
- Constructor CreateFrom3DO(const name:string;lod:integer);
+ Constructor CreateFrom3DO(const name:string;ResetOffsets:boolean;lod:integer);
  Destructor Destroy;override;
  Function NewMesh:T3DOMesh;
  Function GetMat(n:integer):string;
@@ -116,7 +117,7 @@ begin
  else
  begin
   try
-   Result:=T3DO.CreateFrom3DO(name,0);      //njed changed lod value to 0 from 3
+   Result:=T3DO.CreateFrom3DO(name,true,0);      //njed changed lod value to 0 from 3
    L3DOs.AddObject(name,Result);
    Result.ucount:=1;
   except
