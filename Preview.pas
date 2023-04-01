@@ -31,6 +31,7 @@ type
     nCells:integer;
     Procedure TerminateProc(Sender:TObject);
     Procedure ShowBM;
+    Procedure Show3DO;
     Procedure ShowMAT;
     Procedure ShowText;
     Procedure ShowNothing;
@@ -80,6 +81,15 @@ begin
  Im.Picture.Bitmap:=bm;
  Bm.Free;
 end;
+
+
+
+Procedure TPreviewThread.Show3DO;
+begin
+  Set3DOCMP(cmp_name);
+  View3DO(fname);
+end;
+
 
 Procedure TPreviewThread.ShowMAT;
 begin
@@ -172,6 +182,7 @@ begin
   ShowNothing;
 //  Suspend;
 Repeat
+if Terminated then break;
  if not newfile then goto loopend;
  NewFile:=false;
  bmcomment:='';
@@ -179,8 +190,9 @@ Repeat
 Try
  if ext='.3DO' then
  begin
-  Set3DOCMP(cmp_name);
-  View3DO(fname);
+ // Set3DOCMP(cmp_name);
+  //View3DO(fname);
+  Synchronize(Show3DO);
   continue;
  end;
  if (ext='.MAT') then

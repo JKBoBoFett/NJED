@@ -1,5 +1,7 @@
 unit d3d_NPRender;
-
+{
+This is the "new" D3D DX 5.0 IM 3D Renderer
+}
 {$O-}
 
 interface

@@ -1,5 +1,7 @@
 unit D3D_PRender;
-
+ {
+This is the  D3D DX 5.0 RM 3D Renderer
+}
 interface
 uses
  Render,J_Level, Windows, OLE2, SysUtils, Forms, Classes,
@@ -151,7 +153,7 @@ Constructor TD3DTexture.CreateFromMat(const Mat:string;Pal:TCMPPal;d3drm:IDirect
 var
     i:integer;
     pe:^TD3DRMPALETTEENTRY;
-    pb:pchar;
+    pb:pANSIchar;
     mf:TMat;
     f:TFile;
     pw:^word;
@@ -215,11 +217,12 @@ begin
   blue_mask:=$ff;
   alpha_mask:=0;
   palette_size:=256;
+
   GetMem(Palette,sizeof(TD3DRMPALETTEENTRY)*256);
   for i:=0 to 255 do
   With Pal[i] do
   begin
-   pe:=Pointer(Pchar(Palette)+i*sizeof(TD3DRMPALETTEENTRY));
+   pe:=Pointer(PANSIchar(Palette)+i*sizeof(TD3DRMPALETTEENTRY));
    pe^.red:=Min(Round(r*gamma),255);
    pe^.green:=Min(Round(g*gamma),255);
    pe^.blue:=Min(Round(b*gamma),255);
@@ -233,10 +236,18 @@ begin
 end;
 
 Destructor TD3DTexture.Destroy;
+var
+APal:PD3DRMPaletteEntry;
 begin
  if ITexture<>nil then COMRelease(ITexture);
- FreeMem(imh.buffer1);
- if imh.palette<>nil then FreeMem(imh.palette);
+ FreeMem(imh.buffer1,imh.width*imh.height);  //NJED
+ if imh.palette<>nil then
+  begin
+   FreeMem(imh.Palette);
+  // APal := Pointer(imh.palette);
+  // Dispose((APal));
+  //FreeMem(imh.palette,sizeof(TD3DRMPALETTEENTRY)*256 ); //NJED
+  end;
 end;
 
 function _EnumCallBack(const lpGuid: TGUID ;
@@ -315,10 +326,15 @@ begin
  VWidth:=aPanel.Width;
  VHeight:=aPanel.Height;
  gamma:=1;
+
+
+
  TxList:=TStringList.Create;
  TXList.Sorted:=true;
+ TXList.Duplicates:=dupIgnore;
  CmpList:=TStringList.Create;
  CmpList.Sorted:=true;
+ CmpList.Duplicates:=dupIgnore;
  Sectors:=TSectors.Create;
  Meshes:=TList.Create;
  things:=TThings.Create;
@@ -330,8 +346,10 @@ begin
  Inherited Create(aForm);
  TxList:=TStringList.Create;
  TXList.Sorted:=true;
+ TXList.Duplicates:=dupIgnore;
  CmpList:=TStringList.Create;
  CmpList.Sorted:=true;
+ CmpList.Duplicates:=dupIgnore;
  Sectors:=TSectors.Create;
  Meshes:=TList.Create;
  things:=TThings.Create;
@@ -363,7 +381,7 @@ begin
  DisableFPUExceptions;
  DXFailCheck(Direct3DRMCreate(FD3DRM),'in Initialize');
 
- DDBD:=DDBD_8+DDBD_16+DDBD_24+DDBD_32;
+ DDBD:=DDBD_8+DDBD_16+DDBD_24;
  dc := GetDC(WHandle);
  FBPP := GetDeviceCaps(dc, BITSPIXEL);
  ReleaseDC(WHandle, dc);
@@ -1193,6 +1211,7 @@ begin
 
  things.Clear;
  thMeshes.Clear;
+// ClearTXList;    //NJED 3/26/23
 end;
 
 
@@ -1274,12 +1293,24 @@ end;
 
 Procedure TD3DRenderer.ClearTXList;
 var i:integer;
+Acmp:TCMPPal;
+ pcmp:^TCMPPal;
 begin
  for i:=0 to TXList.Count-1 do
-  TXList.Objects[i].Free;
+  begin
+
+  TD3DTexture(TXList.Objects[i]).Free;
+
+  end;
  TXList.Clear;
  for i:=0 to CMPList.Count-1 do
-  FreeMem(Pointer(CMPList.Objects[i]));
+  begin
+  pcmp := Pointer((CMPList.Objects[i]));
+  //CMPList.Delete(i);
+  Dispose(PByte(pcmp));
+  // TCMPPal(CMPList.Objects[i]).
+  //FreeMem(Pointer(CMPList.Objects[i]) ,sizeof(TCMPPal) );
+  end;
   CmpList.Clear;
 end;
 
@@ -1288,9 +1319,11 @@ Function TD3DRenderer.LoadD3DTexture(const name,cmp:string):TD3DTexture;
 var i:integer;
     Ttx:TD3DTexture;
     pcmp:^TCMPPal;
+
     f:TFile;
 begin
  Result:=nil;
+ //exit;
  i:=TXlist.IndexOf(name+cmp);
  if i<>-1 then
  begin

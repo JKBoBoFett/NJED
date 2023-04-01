@@ -4,7 +4,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
-  J_level, Prender, D3D_Prender,ogl_prender, GlobalVars;
+  J_level, Prender, D3D_Prender,ogl_prender,D3D_NPrender, GlobalVars;
 
 Procedure Set3DOPrevActive(isit:boolean);
 Procedure Set3DOCMP(const cmp:string);
@@ -33,7 +33,7 @@ Procedure InitRenderer;
 begin
  if Render3D<>nil then exit;
  //Render3D:=TD3DRenderer.CreateFromPanel(ResPicker.Panel3D);
-  Render3D:=TOGLPRenderer.CreateFromPanel(ResPicker.Panel3D);
+ Render3D:=TOGLPRenderer.CreateFromPanel(ResPicker.Panel3D);
  try
   Render3D.initialize;
  except
@@ -78,7 +78,7 @@ begin
  Render3D.Addthing(tmpthing);
  Render3D.SetViewTothing(tmpthing);
 
- P3DO_SetPCHYAW(cPCH,cYAW);
+ //P3DO_SetPCHYAW(cPCH,cYAW);
 
  Render3D.redraw;
 end;
@@ -111,4 +111,6 @@ end;
 Initialization
 tmpthing:=TJKThing.Create;
 
+
+ 
 end.

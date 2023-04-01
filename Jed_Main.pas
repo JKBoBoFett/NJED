@@ -281,6 +281,10 @@ type
     procedure CutsceneHelper1Click(Sender: TObject);
     procedure N3DOHierarchy1Click(Sender: TObject);
     procedure ExportSectorsasOBJ1Click(Sender: TObject);
+    procedure FormMouseWheelDown(Sender: TObject; Shift: TShiftState;
+      MousePos: TPoint; var Handled: Boolean);
+    procedure FormMouseWheelUp(Sender: TObject; Shift: TShiftState;
+      MousePos: TPoint; var Handled: Boolean);
   public
     {fps NJED}
     SelectedSurfaceVertex : Integer;   //NJED
@@ -2930,7 +2934,13 @@ var
     t:TJKThing;
 begin
 case Mouse_mode of
- MM_SELECT:;
+    MM_Select:
+      if Button = TMouseButton.mbMiddle then
+      begin
+        if GetMousePos(X, Y) then
+          Do_StartRotateCam(X, Y);
+        exit
+      end;
  MM_Cleave: DO_StartCleave(X,Y,ssShift in Shift);
  MM_CreateSector: DO_StartCreateSC(X,Y,ssShift in Shift);
 end;
@@ -2944,11 +2954,36 @@ begin
               Do_SelectAt(X,Y,ssAlt in Shift);
               if ssShift in Shift then DO_MultiSelect;
              end;
+  MM_RotateCam:
+      if Button = TMouseButton.mbMiddle then
+        SetMouseMode(MM_Select);
   MM_CreateSector: DO_EndCreateSC(X,Y,ssShift in Shift);
   MM_DRAG: DO_EndDrag(X,Y);
   MM_Cleave: DO_EndCleave(LastX,LastY,ssShift in Shift);
   MM_RectSelect: DO_EndRectSelect(X,Y);
  end;
+end;
+
+procedure TJedMain.FormMouseWheelDown(Sender: TObject; Shift: TShiftState;
+  MousePos: TPoint; var Handled: Boolean);
+begin
+
+    With Renderer do
+    begin
+       Renderer.scale:=Renderer.scale*1.5;
+    end;
+    Invalidate;
+
+end;
+
+procedure TJedMain.FormMouseWheelUp(Sender: TObject; Shift: TShiftState;
+  MousePos: TPoint; var Handled: Boolean);
+begin
+     With Renderer do
+    begin
+      Renderer.scale:=Renderer.scale/1.5;
+    end;
+    Invalidate;
 end;
 
 procedure TJedMain.FormMouseMove(Sender: TObject; Shift: TShiftState; X,
@@ -5484,6 +5519,7 @@ begin
              +'Proceed?','Warning',mb_YesNo)=idNo then exit;
       end;
 
+      
     AssignFile(t,batname); Rewrite(t);
     Writeln(t,ExtractFileDrive(GameDir));
     Writeln(t,'cd "',GameDir,'"');
@@ -6254,6 +6290,7 @@ begin
   LoadDetails(ni,dir+s+'.dsc');
 
   mi.Add(ni);
+
   
   end;
   res:=FindNext(sr);

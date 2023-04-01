@@ -5,6 +5,12 @@ program NJed;
 {$R *.dres}
 
 uses
+{$IFDEF DEBUG}
+  FastMM4 in 'FastMM4\FastMM4.pas',
+  FastMM4DataCollector in 'FastMM4\FastMM4DataCollector.pas',
+  FastMM4LockFreeStack in 'FastMM4\FastMM4LockFreeStack.pas',
+  FastMM4Messages in 'FastMM4\FastMM4Messages.pas',
+ {$ENDIF}
   Windows,
   Forms,
   Jed_Main in 'Jed_Main.pas' {JedMain},
@@ -112,7 +118,9 @@ begin
 
 
 //  {$INCLUDE FastMM4\FastMM4Options.inc}
-
+  {$IFDEF DEBUG}
+  {$INCLUDE FastMM4\FastMM4Options.inc}
+  {$ENDIF}
   Application.Initialize;
   Application.Title := 'NJED';
   Application.CreateForm(TJedMain, JedMain);

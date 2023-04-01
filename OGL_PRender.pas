@@ -1,5 +1,7 @@
 unit ogl_PRender;
-
+  {
+This is the OpenGL 3D Renderer
+}
 interface
 uses Windows, dglOpenGL, Prender, Classes, J_Level, Forms,
      Messages, files, FileOperations, graph_files,
@@ -35,7 +37,7 @@ TOGLPRenderer=class(TNewPRenderer)
  Procedure DrawMesh(m:T3DPMesh);override;
  Procedure GetWorldLine(X,Y:integer;var X1,Y1,Z1,X2,Y2,Z2:double);override;
  Procedure ClearTXList;override;
-
+ Procedure SetViewToThing(th:TJKThing);override;
  Procedure Redraw;override;
 Private
  Procedure SetMatrix;
@@ -93,6 +95,16 @@ begin
  Whandle:=aPanel.handle;
  VWidth:=aPanel.Width;
  VHeight:=aPanel.Height;
+
+ TxList:=TStringList.Create;
+ TXList.Sorted:=true;
+ CmpList:=TStringList.Create;
+ CmpList.Sorted:=true;
+ Sectors:=TSectors.Create;
+ scList:=TMeshes.Create;
+ thList:=TMeshes.Create;
+ things:=TThings.Create;
+
 
 end;
 
@@ -172,6 +184,42 @@ glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
  glClearColor(1,1,1,1);}
 
 end;
+
+
+Procedure TOGLPRenderer.SetViewToThing(th:TJKThing);
+var
+ bbox:TThingBox;
+ tcen_x,tcen_y,tcen_z:double; {thing center}
+ tdim_x,tdim_y,tdim_z:double; {thing dimension}
+ trad:double; {radius}
+ d:double;
+begin
+ if th.a3DO=nil then exit;
+ th.a3DO.GetBBox(bbox);
+
+ tcen_x:=bbox.x1+(bbox.x2-bbox.x1)/2;
+ tcen_y:=bbox.y1+(bbox.y2-bbox.y1)/2;
+ tcen_z:=bbox.z1+(bbox.z2-bbox.z1)/2;
+
+ trad:=sqrt(sqr(tcen_x-bbox.x1)+sqr(tcen_y-bbox.y1)+sqr(tcen_z-bbox.z1));
+
+ tdim_x:= bbox.x2-bbox.x1;
+ tdim_y:= bbox.y2-bbox.y1;
+ tdim_z:= bbox.z2-bbox.z1;
+
+// glMatrixMode(GL_MODELVIEW);
+// glLoadIdentity();
+// gluLookAt(tcen_x + tdim_x, tcen_y + tdim_y, tcen_z + tdim_z,
+//          tcen_x, tcen_y, tcen_z,
+//          0.0, 1.0, 0.0);
+
+
+CamX:=tcen_x;
+CamY:=tcen_y-trad*1.5;
+CamZ:=tcen_z;
+
+end;
+
 
 Function TOGLPRenderer.CreateOGLPalette(const pd:TPIXELFORMATDESCRIPTOR):integer;
 var ncolors:integer;
