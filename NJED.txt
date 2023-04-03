@@ -1,12 +1,43 @@
+NJED V.974():
+-Ported Borland Delphi 2006 source to Delphi Community 10.4
+-Add support to rotate and zoom with mousewheel click and scroll in wire frame mode(code by RazorHK)
+-Changed 3do preview render in resource picker to OpenGL from d3d RM
 
-NJED V.971 (2022):
-Ported source to Delphi 10.4
-Added face flags, two sided,collides with other objects
-Fixed face flags being ignored on 3do import
-Added ability to Manually edit Surface Vertex light intensites
-Enabled Manual Edit of sector Ambient light (effects lighting on things)
+NJED V.973(18-MAR-2023):
+Changes to 3D Preview:
+	-Right mouse button with mouse movement (mouselook)
+	-Alt+right mouse button with mouse movement (pan right and left / forward and back)
+	-Ctrl+right mouse button with mouse movement (pan right and left /up and down)
+	-Shift+right mouse button with mouse movement ('fly mode' pan up and down with mouse)
+	-Mousewheel (move forward and back)
+	-Ctrl + mousewheel (move up and down)
+	-Right mouse with W,A,S,D moves cammera forward,left,back,right 
+	-Right mouse with Q,Z moves cammera up,down 
+	-Added a status bar to 3d preview with drop downs that can control 3d grid step and mouse sensitvity
+	-Added a 'Open Map Options Grid Step' button to the 3D preview options page
+	-Added 'Invert Mouselook Y' in 3D preview options
+Miscellaneous changes:	
+	-Jed allready had a hotkey for Grid to View. Previous versions altered this, so changed it back to Grid to View 'NUMPAD /' View to Grid to 'NUMPAD *'
+	-Changed the hint for extra mode to 'extra mode(3do hierarchy)'
+	-In Resoruce Picker; added a Thumbnail viewer for mat's
+	-fixed typo in mats.jll	
 
-NJED V.97: (2016)
+NJED V.972(14-JAN-2023):
+-changed shortcuts View to Grid to 'Shift+Q', Grid to View 'Q' as 'Z' created a conflict in 3d preview
+
+NJED V.971(2022):
+-Added face flags, two sided,collides with other objects
+-Fixed face flags being ignored on 3do import
+-Added ability to Manually edit Surface Vertex light intensites
+-Enabled Manual Edit of sector Ambient light (effects lighting on things)
+-Added shortcuts: Snap Grid to Object 'Shift+S', Snap View to Object 'ALT+S', View to Grid 'Shift+Z', Grid to View 'Z'
+-Improved 'save JKL and test': now gives a warning if project directory is not in 8:3 filename format. Will use inject.exe if found in game directory.
+-Added 'Surface Tools' from orignal plugin source code with small improvments. Has functions to Scale,collapse,move along normal,Inset on selected surfaces.
+-corrected pivot points on exported 3do's. Automatically sets correct insert offset on player models
+-support for 24bit and 32 mats in OpenGl render only (for future custom engines)
+-changed default level surfaces
+
+NJED V.97(2016):
 Added .obj import, imports geometry and UV coordinates. Tested with Milkshape 3D and Blender.
 Added a warning if exporting a 3do with more then 512 vertices, 768 TX vertices, 512 faces in a mesh.
 In level preview, 3DO LOD 0 is now drawn not 3.
@@ -18,8 +49,8 @@ Added keyboard keys '-' '=' for zoom in and out
 Improved OpenGL support. Now using dglOpenGL header, not the buggy default Delphi unit.
 Added 'thing limit' override option in the episode header editor 
 
-NJED V.96: (2014)
-Ported Delphi 2 source to Borland Delphi 2006
+NJED V.96(2014):
+Ported Delphi 2 JED source to Borland Delphi 2006
 Removed CD checks
 Added Grid Dot Steps 0.001,0.005,0.05
 Added Grid Snap Steps 0.0005,0.001

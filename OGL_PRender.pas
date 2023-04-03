@@ -39,6 +39,8 @@ TOGLPRenderer=class(TNewPRenderer)
  Procedure ClearTXList;override;
  Procedure SetViewToThing(th:TJKThing);override;
  Procedure Redraw;override;
+ Procedure LookAtThing(const bbox:TThingBox;tpch,tyaw:double;zoom:double);
+ Procedure SetPCHYAW(pch,yaw:double);override;
 Private
  Procedure SetMatrix;
  Function CreateOGLPalette(const pd:TPIXELFORMATDESCRIPTOR):integer;
@@ -221,6 +223,58 @@ CamZ:=tcen_z;
 end;
 
 
+//from pjedi source
+Procedure TOGLPRenderer.LookAtThing(const bbox:TThingBox;tpch,tyaw:double;zoom:double);
+var tcen_x,tcen_y,tcen_z:double; {thing center}
+    trad:double; {radius}
+    nd,d:double;
+    vec:TVector;
+begin
+ tcen_x:=bbox.x1+(bbox.x2-bbox.x1)/2;
+ tcen_y:=bbox.y1+(bbox.y2-bbox.y1)/2;
+ tcen_z:=bbox.z1+(bbox.z2-bbox.z1)/2;
+ trad:=sqrt(sqr(tcen_x-bbox.x1)+sqr(tcen_y-bbox.y1)+sqr(tcen_z-bbox.z1));
+ d:=FrontPlane+Trad;
+ nd:=trad/sin(320/2*pi/180);
+ if nd>d then d:=nd;
+ nd:=trad/sin(240/2*pi/180);
+ if nd>d then d:=nd;
+ d:=d*zoom;
+
+ SetVec(vec,0,d,0);
+ RotateVector(vec,tpch,0,0);
+ RotateVector(vec,0,tyaw,0);
+
+ yaw:=180-tyaw;
+ pch:=tpch;
+
+ CamX:=tcen_x+vec.dx;
+ CamY:=tcen_y+vec.dy;
+ CamZ:=tcen_z+vec.dz;
+
+end;
+
+
+
+
+
+Procedure TOGLPRenderer.SetPCHYAW(pch,yaw:double);
+var
+ th:TJKThing;
+ bbox:TThingBox;
+
+begin
+if things.count=0 then exit;
+
+th:=Things[0];
+ if th.a3DO=nil then exit;
+
+th.a3DO.GetBBox(bbox);
+ LookAtThing(bbox,pch,yaw,0.5);
+
+end;
+
+
 Function TOGLPRenderer.CreateOGLPalette(const pd:TPIXELFORMATDESCRIPTOR):integer;
 var ncolors:integer;
     lp:PLogPalette;
@@ -396,12 +450,17 @@ var
     usepalette:boolean;
 
 begin
+if mat='00_GLASS.MAT' then
+begin
+ PanMessage(mt_warning,'Can''t find file anywhere: '+mat);
+ exit;
+end;
+
  f:=OpenGameFile(mat);
  mf:=TMat.Create(f,0);
 
  //usepalette:=(mf.info.storedas<>bylines16) and (@pPalProc<>nil);
  usepalette:=false;   //doesnt work with nvidia
-
 
  width:=mf.info.width;
  height:=mf.info.Height;

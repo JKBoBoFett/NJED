@@ -68,7 +68,7 @@ begin
  tmpthing.a3DO:=nil;
  a3DO.Free;
  tmpthing.a3DO:=T3Do.CreateFrom3DO(name,true,0);
- tmpthing.YAW:=180;
+ tmpthing.YAW:=0;   //njed 04/3/2023 WAS 180
  tmpthing.a3Do.GetBBox(box);
 
  Render3D.thing_cmp:=cur_cmp;
@@ -78,7 +78,7 @@ begin
  Render3D.Addthing(tmpthing);
  Render3D.SetViewTothing(tmpthing);
 
- //P3DO_SetPCHYAW(cPCH,cYAW);
+ P3DO_SetPCHYAW(cPCH,cYAW);
 
  Render3D.redraw;
 end;

@@ -527,6 +527,10 @@ begin
   if IsInGOB(mp3_gob,'cog\'+Name) then begin Result:=OpenFileRead(mp3_gob+'>cog\'+name,0); exit; end;
 
  end;
+
+ //if name='00_GLASS.MAT' then  result:=OpenGameFile('dflt.mat');
+
+
  PanMessage(mt_warning,'Can''t find file anywhere: '+Name);
  Raise Exception.Create('Can''t find file anywhere: '+Name);
 end;
