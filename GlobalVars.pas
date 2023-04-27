@@ -25,7 +25,7 @@ Type
 
 Const
      MaxMsgs=500;
-     JedVerNum='0.973';
+     JedVerNum='0.974';
      JedVersion:string=JedVerNum+' beta';
      LECLogo:String=
 '................................'#13#10+

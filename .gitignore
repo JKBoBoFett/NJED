@@ -4,13 +4,15 @@
 /*.drc
 /*.~pa
 /*.dll
+/*.pdf
 /FastMM4
 /d3d
 /Jeddata
 /plugins
 /__history
 /OPENGL.PAS
-/dglOpenGL15.pas
+/dglOpenGL*.pas
+/dglOpenGL.pas
 /*.dof
 /dxtools2.pas
 /Jed.identcache

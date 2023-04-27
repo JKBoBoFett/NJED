@@ -11,7 +11,7 @@ Procedure Set3DOCMP(const cmp:string);
 Procedure View3DO(const name:string);
 procedure Init3DOPreview;
 procedure Done3DOPreview;
-
+Procedure P3DO_SetOnMouseWheel(IsPos:boolean);
 Procedure P3DO_SetPCHYAW(PCH,YAW:Double);
 
 implementation
@@ -21,7 +21,7 @@ var
     isactive:boolean;
     tmpthing:TJKThing;
     render3D:TPreviewRender;
-    cPCH,CYaw:double;
+    cPCH,CYaw,CZoom:double;
     cur_cmp:string;
 
 Procedure Set3DOCMP(const cmp:string);
@@ -76,10 +76,10 @@ begin
  Render3D.SetGamma(P3DGamma);
  Render3D.ClearThings;
  Render3D.Addthing(tmpthing);
- Render3D.SetViewTothing(tmpthing);
-
- P3DO_SetPCHYAW(cPCH,cYAW);
-
+ //Render3D.SetViewTothing(tmpthing);
+ Render3D.LookAtThing(box,cPCH,cYAW,1.1);
+ //P3DO_SetPCHYAW(cPCH,cYAW);
+ CZoom:=1.1;
  Render3D.redraw;
 end;
 
@@ -100,13 +100,41 @@ begin
 end;
 
 Procedure P3DO_SetPCHYAW(PCH,YAW:Double);
+var
+ box:TThingBox;
 begin
  cPCH:=PCH;
  cYAw:=YAW;
  if render3D=nil then exit;
- Render3D.SetPCHYaw(PCH,Yaw);
+ //Render3D.SetPCHYaw(PCH,Yaw);
+ tmpthing.a3Do.GetBBox(box);
+ Render3D.LookAtThing(box,cPCH,cYAW,CZoom);
  Render3D.redraw;
 end;
+
+
+Procedure P3DO_SetOnMouseWheel(IsPos:boolean);
+var
+ box:TThingBox;
+begin
+
+ if render3D=nil then exit;
+  tmpthing.a3Do.GetBBox(box);
+ if IsPos then
+  begin
+  CZoom:=CZoom-0.1;
+  Render3D.LookAtThing(box,cPCH,cYAW,CZoom);
+  end
+
+  else
+   begin
+   CZoom:=CZoom+0.1;
+   Render3D.LookAtThing(box,cPCH,cYAW,CZoom);
+   end;
+
+ Render3D.redraw;
+end;
+
 
 Initialization
 tmpthing:=TJKThing.Create;

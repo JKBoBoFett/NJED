@@ -88,6 +88,7 @@ TPreviewRender=class
  Function SetGamma(gamma:double):integer;virtual;abstract;
  Procedure SetViewToThing(th:TJKThing);virtual;abstract;
  Procedure SetPCHYAW(pch,yaw:double);virtual;abstract;
+ Procedure LookAtThing(const bbox:TThingBox;tpch,tyaw:double;zoom:double);virtual;abstract;
  {Arranges camera so that the camera looks at the thing with max possible size}
  Procedure SetThing3DO(th:TJKThing;a3do:TPJ3DO);virtual;abstract;
 end;

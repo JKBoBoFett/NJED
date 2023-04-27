@@ -528,9 +528,6 @@ begin
 
  end;
 
- //if name='00_GLASS.MAT' then  result:=OpenGameFile('dflt.mat');
-
-
  PanMessage(mt_warning,'Can''t find file anywhere: '+Name);
  Raise Exception.Create('Can''t find file anywhere: '+Name);
 end;

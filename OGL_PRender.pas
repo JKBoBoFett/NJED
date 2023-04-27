@@ -39,58 +39,26 @@ TOGLPRenderer=class(TNewPRenderer)
  Procedure ClearTXList;override;
  Procedure SetViewToThing(th:TJKThing);override;
  Procedure Redraw;override;
- Procedure LookAtThing(const bbox:TThingBox;tpch,tyaw:double;zoom:double);
+ Procedure LookAtThing(const bbox:TThingBox;tpch,tyaw:double;zoom:double); override;
  Procedure SetPCHYAW(pch,yaw:double);override;
 Private
  Procedure SetMatrix;
  Function CreateOGLPalette(const pd:TPIXELFORMATDESCRIPTOR):integer;
 end;
 
-
 implementation
 
 var ntex:integer=0;
-
-{function wglGetProcAddress; stdcall;    external opengl32;
-Procedure glGenTextures(n:GLsizei; var textures:GLuint); stdcall; external opengl32;
-Procedure glDeleteTextures (n:GLsizei; var textures:GLuint); stdcall; external opengl32;}
-
-
-//Const
-// GL_COLOR_INDEX8_EXT = $80E5;
-// GL_RGB8             = $8051;
-// GL_RGB5             = $8050;
-
-var
  pPalProc:pColorTableExt;
 
-{    pfnColorTableEXT = (PFNGLCOLORTABLEEXTPROC)
-        wglGetProcAddress("glColorTableEXT");
-    if (pfnColorTableEXT == NULL)
-        return FALSE;
-    pfnColorSubTableEXT = (PFNGLCOLORSUBTABLEEXTPROC)
-        wglGetProcAddress("glColorSubTableEXT");
-    if (pfnColorSubTableEXT == NULL)
-        return FALSE;
-
-    glTexImage2D( GL_TEXTURE_2D, 0, GL_COLOR_INDEX8_EXT,
-          sizeX, sizeY, 0,
-          GL_COLOR_INDEX, GL_UNSIGNED_BYTE,
-          _data );
-
-    pfnColorTableEXT(GL_TEXTURE_2D, GL_RGB8, sizeof(YOUR_PALETTE),
-	  GL_RGBA, GL_UNSIGNED_BYTE, YOUR_PALETTE );}
-
-procedure DisableFPUExceptions ;
+procedure DisableFPUExceptions;
 var
-  FPUControlWord: WORD ;
+  FPUControlWord: WORD;
 asm
-  FSTCW   FPUControlWord ;
-  OR      FPUControlWord, $4 + $1 ; { Divide by zero + invalid operation }
-  FLDCW   FPUControlWord ;
-end ;
-
-
+  FSTCW   FPUControlWord;
+  OR      FPUControlWord, $4 + $1; { Divide by zero + invalid operation }
+  FLDCW   FPUControlWord;
+end;
 
 Constructor TOGLPRenderer.CreateFromPanel(aPanel:TPanel);
 begin
@@ -106,8 +74,6 @@ begin
  scList:=TMeshes.Create;
  thList:=TMeshes.Create;
  things:=TThings.Create;
-
-
 end;
 
 Constructor TOGLPRenderer.Create(aForm:TForm);
@@ -137,54 +103,22 @@ var
 begin
  if not InitOpenGL then Raise Exception.Create('Couldn''t initialize OpenGL');
  hdc:=GetDC(WHandle);
-{ pfd.nsize :=  40;
- pfd.nVersion := 1;
-pfd.dwFlags :=  PFD_DRAW_TO_WINDOW + PFD_SUPPORT_OPENGL+PFD_DOUBLEBUFFER;
- pfd.iPixelType := PFD_TYPE_RGBA;
- pfd.cColorBits := 8; pfd.cRedBits := 0; pfd.cRedShift := 0; pfd.cGreenBits := 0;
- pfd.cGreenShift := 0; pfd.cBlueBits := 0; pfd.cBlueShift := 0; pfd.cAlphaBits := 0;
- pfd.cAlphaShift := 0; pfd.cAccumBits := 0; pfd.cAccumRedBits := 0; pfd.cAccumGreenBits := 0;
- pfd.cAccumBlueBits := 0; pfd.cAccumAlphaBits := 0; pfd.cDepthBits := 32;
- pfd.cStencilBits := 0; pfd.cAuxBuffers := 0; pfd.iLayerType := PFD_MAIN_PLANE;
-pfd.iLayerType := 0;
- pfd.bReserved := 0;
- pfd.dwLayerMask := 0;
- pfd.dwVisiblemask := 0;
- pfd.dwDamageMask := 0;
- pixelFormat := ChoosePixelFormat(HDC, @pfd);
- SetPixelFormat(Hdc, pixelFormat, @pfd);
- DescribePixelFormat(HDC, pixelFormat, sizeof(pfd), pfd);
- Hpal:=CreateOGLPalette(pfd);    }
- hglc:=CreateRenderingContext(hdc, [opDoubleBuffered],32,16,0,0,0,0);
+ hglc:=CreateRenderingContext(hdc, [opDoubleBuffered],32,24,0,0,0,0);
  ActivateRenderingContext(hdc,hglc);
  hglc:= wglCreateContext(hdc);
  wglMakeCurrent(hdc,hglc);
- SwapBuffers(hdc);
+ //SwapBuffers(hdc);
  // glPolygonMode(GL_Front_AND_BACK,gl_Line);
  glEnable(GL_CULL_FACE);
  glCullFace(GL_BACK);
  glFrontFace(GL_CCW);
 
- glEnable(GL_TEXTURE_2D);
+ glShadeModel(GL_SMOOTH);
 
  glEnable(GL_DEPTH_TEST);
 
- glShadeModel(GL_SMOOTH);
-
- //@pPalProc:=wglGetProcAddress('glColorTableEXT');
-  glEnable( GL_BLEND );
-glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
- if (@pPalProc=nil) then
- begin
-  //PanMessage(mt_info,'Your OpenGL implemetation doesn''t support palettized textures!');
- end;
-
- { glDepthRange(0,1000);
- glCullFace(GL_BACK);
- glEnable(GL_CULL_FACE);
- glFrontFace(GL_CCW);
- glClearColor(1,1,1,1);}
-
+ glEnable(GL_TEXTURE_2D);
+ glPolygonmode(GL_FRONT, GL_FILL);
 end;
 
 
@@ -194,31 +128,30 @@ var
  tcen_x,tcen_y,tcen_z:double; {thing center}
  tdim_x,tdim_y,tdim_z:double; {thing dimension}
  trad:double; {radius}
- d:double;
+ d,nd:double;
+  vec:TVector;
 begin
- if th.a3DO=nil then exit;
- th.a3DO.GetBBox(bbox);
-
- tcen_x:=bbox.x1+(bbox.x2-bbox.x1)/2;
- tcen_y:=bbox.y1+(bbox.y2-bbox.y1)/2;
- tcen_z:=bbox.z1+(bbox.z2-bbox.z1)/2;
-
- trad:=sqrt(sqr(tcen_x-bbox.x1)+sqr(tcen_y-bbox.y1)+sqr(tcen_z-bbox.z1));
-
- tdim_x:= bbox.x2-bbox.x1;
- tdim_y:= bbox.y2-bbox.y1;
- tdim_z:= bbox.z2-bbox.z1;
-
-// glMatrixMode(GL_MODELVIEW);
-// glLoadIdentity();
-// gluLookAt(tcen_x + tdim_x, tcen_y + tdim_y, tcen_z + tdim_z,
-//          tcen_x, tcen_y, tcen_z,
-//          0.0, 1.0, 0.0);
-
-
-CamX:=tcen_x;
-CamY:=tcen_y-trad*1.5;
-CamZ:=tcen_z;
+// if th.a3DO=nil then exit;
+// th.a3DO.GetBBox(bbox);
+//
+//
+// tcen_x:=bbox.x1+(bbox.x2-bbox.x1)/2;
+// tcen_y:=bbox.y1+(bbox.y2-bbox.y1)/2;
+// tcen_z:=bbox.z1+(bbox.z2-bbox.z1)/2;
+//
+// trad:=sqrt(sqr(tcen_x-bbox.x1)+sqr(tcen_y-bbox.y1)+sqr(tcen_z-bbox.z1));
+// d:=FrontPlane+Trad;
+//
+// d:=FrontPlane+Trad;
+// nd:=trad/sin(320*pi/180);
+// if nd>d then d:=nd;
+// nd:=trad/sin(240*pi/180);
+// if nd>d then d:=nd;
+//
+//
+// CamX:=tcen_x;
+// CamY:=tcen_y-10;
+// CamZ:=tcen_z;
 
 end;
 
@@ -235,9 +168,9 @@ begin
  tcen_z:=bbox.z1+(bbox.z2-bbox.z1)/2;
  trad:=sqrt(sqr(tcen_x-bbox.x1)+sqr(tcen_y-bbox.y1)+sqr(tcen_z-bbox.z1));
  d:=FrontPlane+Trad;
- nd:=trad/sin(320/2*pi/180);
+ nd:=trad/sin(320*pi/180);
  if nd>d then d:=nd;
- nd:=trad/sin(240/2*pi/180);
+ nd:=trad/sin(240*pi/180);
  if nd>d then d:=nd;
  d:=d*zoom;
 
@@ -254,26 +187,17 @@ begin
 
 end;
 
-
-
-
-
 Procedure TOGLPRenderer.SetPCHYAW(pch,yaw:double);
-var
- th:TJKThing;
- bbox:TThingBox;
 
 begin
-if things.count=0 then exit;
-
-th:=Things[0];
- if th.a3DO=nil then exit;
-
-th.a3DO.GetBBox(bbox);
- LookAtThing(bbox,pch,yaw,0.5);
-
+//if things.count=0 then exit;
+//
+//th:=Things[0];
+// if th.a3DO=nil then exit;
+//
+//th.a3DO.GetBBox(bbox);
+// LookAtThing(bbox,pch,yaw,1.1);
 end;
-
 
 Function TOGLPRenderer.CreateOGLPalette(const pd:TPIXELFORMATDESCRIPTOR):integer;
 var ncolors:integer;
@@ -318,10 +242,6 @@ Function Min(i1,i2:integer):integer;
 begin
  if i1<i2 then result:=i1 else result:=i2;
 end;
-
-{Procedure TOGLPRenderer.SetViewPort(x,y,w,h:integer);
-begin
-end;}
 
 Procedure TOGLPRenderer.DrawMesh(m:T3DPMesh);
 var i,j:integer;
@@ -372,8 +292,8 @@ begin
  wglMakeCurrent(hdc,hglc);      //range check error
  glMatrixMode(GL_Projection);
  glLoadIdentity;
- a:=2*arctan(240/320)/pi*180;
- gluPerspective(a, 320/240 , 0.05, 5000.0);
+ a:=2*arctan(240/320)/pi*180;   //vertical viewing angle in degrees.
+ gluPerspective(a, 320/240 , FrontPlane, BackPlane);
  glRotated(-90,1,0,0);
  glRotated(pch,1,0,0);
  glRotated(yaw,0,0,1);

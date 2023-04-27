@@ -6,7 +6,7 @@ uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
   StdCtrls, ComCtrls, GlobalVars, misc_utils, ExtCtrls, Preview, jdh_jdl,
   J_Level, Buttons, u_templates, values, ImgList,graph_files,MatThumbNails,U_MatToBmpThread,
-  System.ImageList;
+  System.ImageList,system.Math;
 
 type
   TResPicker = class(TForm)
@@ -44,6 +44,8 @@ type
     procedure SBPCHChange(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure BTN_matThumbClick(Sender: TObject);
+    procedure FormMouseWheel(Sender: TObject; Shift: TShiftState;
+      WheelDelta: Integer; MousePos: TPoint; var Handled: Boolean);
   private
     { Private declarations }
 {    ProjDir:String;
@@ -920,6 +922,17 @@ begin
   loadcmp:=false;
  end;
  BTN_matThumb.Visible:=false;
+end;
+
+procedure TResPicker.FormMouseWheel(Sender: TObject; Shift: TShiftState;
+  WheelDelta: Integer; MousePos: TPoint; var Handled: Boolean);
+var
+IsPos:boolean;
+begin
+
+if sign(WheelDelta) = 1 then IsPos:=true else IsPos:=false;
+
+ P3DO_SetOnMouseWheel(IsPos);
 end;
 
 procedure TResPicker.FormCreate(Sender: TObject);
