@@ -961,6 +961,14 @@ finally
  for i:=0 to sec.surfaces.count-1 do
   sec.surfaces[i].Recalc;
 
+ // Surfaces may have been removed: keep the current surface selection inside the sector
+ if (JedMain.Cur_SC>=0) and (JedMain.Cur_SC<Level.Sectors.Count) and
+    (Level.Sectors[JedMain.Cur_SC]=sec) and (JedMain.Cur_SF>=sec.surfaces.count) then
+ begin
+  JedMain.Cur_SF:=sec.surfaces.count-1;
+  if JedMain.Cur_SF<0 then JedMain.Cur_SF:=0;
+ end;
+
  CurUndoRec:=tmpur;
 end;
 

@@ -349,6 +349,9 @@ type
     RectOrgX,RectOrgY:Integer;
     RectLastX,RectLastY:Integer;
     RectSelStarted:boolean;
+    GridHidden:boolean;        {Ctrl+Shift+G: hide the grid}
+    CleaveSpaceDown:boolean;   {ignores key auto-repeat}
+    CleavePlainLine:boolean;   {Space while cleaving: glowing blade / plain line}
 
     {Grid translate vars}
     GOrgXY:TPoint;
@@ -357,6 +360,43 @@ type
     CamOrg:TPoint;
     {Cam Rotate vars}
     OrgX,OrgY,OrgZ:TVector;
+    CamDrag:integer;                {middle mouse drag: 0 orbit, 1 pan (Shift), 2 zoom (Ctrl)}
+    CamStartX,CamStartY,CamStartZ,CamStartScale:double;
+    {Left tool strip}
+    ToolPanel:TPanel;
+    ToolTitle:TLabel;
+    ToolBtns:array[0..9] of TSpeedButton;
+    ToolBevel:boolean;              {Bevel tool active: drag the handle to chamfer the edges of the surface}
+    GeomBefore:TStringList;         {geometry errors that existed before a drag started}
+    GeomArmed:boolean;
+    ToolBox:boolean;                {Box Cut tool active: drag a rectangle on the selected surface}
+    BoxPX,BoxPY,BoxPZ:double;       {origin of the surface plane used by Box Cut}
+    BoxU,BoxV,BoxN:TVector;         {in-plane axes and normal of that plane}
+    BoxA0,BoxB0,BoxA1,BoxB1:double; {rectangle corners in plane coordinates}
+    ToolInset:boolean;              {Inset tool active: drag the handle on the surface towards its center}
+    ToolPlane:boolean;              {Plane Cut tool active: a cleave plane with a draggable handle}
+    PlaneAxis:integer;              {1..3 = world X/Y/Z plane, 4 = grid plane}
+    PlOffX,PlOffY,PlOffZ:double;    {offset of the plane point from the selection center}
+    PlaneA,PlaneB:double;           {tilt of the plane in radians: A about its V axis, B about its U axis}
+    GizF2,GizDX,GizDY,GizDZ:double; {drag state of the tilt handles}
+    PlaneRstBtn:TSpeedButton;
+    PlaneKey:string;
+    PlCX,PlCY,PlCZ,PlHalf,GizExt:double;
+    PlaneBtns:array[1..4] of TSpeedButton;
+    PlaneCutBtn:TSpeedButton;
+    ToolWeld:TCheckBox;             {Surface mode: also move touching vertices of other sectors}
+    ToolExtrude:boolean;            {Extrude tool active: gizmo arrow extrudes the surface}
+    GizScaleExt,GizScaleBase:double;
+
+    GizScaleInit:boolean;                  {scale: size of the selection (from the pivot) when the drag started}
+
+    ToolScale:boolean;              {Scale tool active: gizmo scales the selection}
+    GizF:double;                    {current scale factor while dragging the scale gizmo}
+    ToolMove:boolean;               {Move tool active: plain left drag moves the selection}
+    ToolDownX,ToolDownY:integer;
+    GizAxis:integer;                {Move gizmo: 0 none, 1=X, 2=Y, 3=Z axis grabbed}
+    GizDownX,GizDownY:integer;
+    GizOX,GizOY,GizOZ:double;       {gizmo origin when the drag started}
     {Stitch variables}
     stitch_Sec:TJKSector;
     stitch_Surf:TJKSurface;
@@ -396,6 +436,7 @@ type
     procedure PluginClick(Sender: TObject);
     Procedure LoadPlugins;
     Procedure Import3DO(const name:string);
+    procedure OpenProjectFolderClick(Sender:TObject);
 
     procedure ExceptHandler(Sender: TObject; E: Exception);
     Procedure SetRendfromPYR;
@@ -408,6 +449,9 @@ type
     Procedure ConnectSCs;
     Procedure JumpToObject;
   public
+    OpenRecentMenu: TMenuItem;       {created at runtime, not a designer component}
+    OpenFolderMenu: TMenuItem;       {created at runtime: File > Open project folder}
+    ImportRecentMenu: TMenuItem;     {created at runtime, not a designer component}
     Procedure SaveSelThingsUndo(const rname:string;change:integer);
     Procedure SaveSelLightsUndo(const rname:string;change:integer);
     Procedure SaveSelFramesUndo(const rname:string;change:integer);
@@ -440,6 +484,43 @@ type
     Procedure Do_StartDrag(X,Y:integer);
     Procedure Do_ProceedDrag(X,Y:integer;snaptovx:boolean;snaptoaxis,yaxis:boolean);
     Procedure Do_EndDrag(X,Y:Integer);
+    Function GizmoActive:boolean;
+    Function GizmoLen:double;
+    Procedure GizmoOrigin(var ox,oy,oz:double);
+    Procedure GizSelCenter(var ox,oy,oz:double);
+    Procedure PlaneBase0(var n,u,v:TVector);
+    Procedure PlaneBasisEx(var n,u,v,n1:TVector);
+    Procedure PlaneBasis(var n,u,v:TVector);
+    procedure PlaneResetClick(Sender: TObject);
+    Procedure PlaneUpdate(var px,py,pz:double);
+    Procedure DoPlaneCut;
+    procedure PlaneAxisClick(Sender: TObject);
+    procedure PlaneCutClick(Sender: TObject);
+    Procedure GizDir(a:integer;var dx,dy,dz:double);
+    Procedure DoGizExtrude;
+    Procedure DoGizInset;
+    Procedure BoxSetup;
+    Function BoxMap(X,Y:integer;var a,b:double):boolean;
+    Procedure BoxWorld(a,b:double;vx:TJKVertex);
+    Function BoxFindPiece(ca,cb:double):integer;
+    Procedure DoGizBox;
+    Function BevelEdgeData(surf:TJKSurface;var ed:TArray<double>;var dmax:double;var skipped:integer):integer;
+    Procedure DoGizBevel;
+    Procedure GizExtrudeSurfs(keys:TStringList);
+    Procedure AddSurfVertKeys(keys:TStringList;sc,sf:integer;mirror:boolean);
+    Procedure CloseOverAdjoins(keys:TStringList);
+    Procedure AddWeldedKeys(keys:TStringList);
+    Procedure MoveSurfacesWithMirror(dx,dy,dz:double);
+    Function KeysOverlap(keys:TStringList):boolean;
+    Procedure MoveKeysTogether(keys:TStringList;dx,dy,dz:double);
+    Procedure GeomCollect(list:TStringList);
+    Function GeomSnap:TStringList;
+    Function GeomGuard(before:TStringList;const opname:string):boolean;
+    Procedure GeomDragStart;
+    Function GizmoPick(X,Y:integer):integer;
+    Procedure DrawGizmo;
+    Procedure Do_StartGizmo(X,Y:integer);
+    Procedure Do_ProceedGizmo(X,Y:integer);
 
     Procedure Do_StartTranslateCam(X,Y:integer);
     Procedure Do_TranslateCam(X,Y:integer);
@@ -535,6 +616,13 @@ type
     Procedure VerifyMultiSelection;
 
     Procedure SyncRecents;
+    Procedure SyncImportRecents;
+    Procedure AddImportRecent(const s:string);
+    Procedure DoImport(const FileName:string);
+    procedure ImportRecentClick(Sender: TObject);
+    Procedure BuildToolStrip;
+    Procedure UpdateToolStrip;
+    procedure ToolStripClick(Sender: TObject);
     Procedure AddRecent(const s:string);
     Procedure LevelChanged;
     Procedure UpdateItemEditor;
@@ -586,6 +674,8 @@ var
   SurfSeamDeg:double=180;          // azimuth of the cut around the axis, degrees (180 = the old default)
   SurfSeamFromCam:boolean=true;    // put the cut on the far side of the camera instead (SurfCam* = camera position)
   SurfCamX,SurfCamY,SurfCamZ:double;
+  SurfHasCamView:boolean=false;     // planar mapping on level surfaces: lay the texture out as seen through the 3D preview camera
+  SurfCamRX,SurfCamRY,SurfCamRZ,SurfCamUX,SurfCamUY,SurfCamUZ:double;   // camera right and up vectors
   SurfFitWidth:boolean=false;      // texture wraps exactly once (one texture width) around the cylinder / sphere
 
 Procedure LoadThing3DO(th:TJKThing;force:boolean);
@@ -599,7 +689,7 @@ uses Item_edit, U_CogForm, Cons_checker, FileDialogs, U_Tools,
   U_Options, Jed_about1, ProgressDialog, U_tbar, U_Preview, U_msgForm,
   Q_Sectors, Q_surfs, Q_things, U_lheader, U_Medit, u_DFI,
   u_errorform, U_tplcreate, ResourcePicker, u_cscene, u_3doform,
-  graph_files, u_uvedit;
+  graph_files, u_uvedit, System.Generics.Collections;
 
 
 
@@ -973,6 +1063,2518 @@ begin
  Renderer.DrawVertex(x,y,z);
 end;
 
+{Move gizmo (Blender style axis arrows)}
+const GIZ_PX=70;   {arrow length in screen pixels}
+
+Procedure GizAxisDir(a:integer;var dx,dy,dz:double);
+begin
+ dx:=0; dy:=0; dz:=0;
+ case a of
+  1: dx:=1;
+  2: dy:=1;
+  3: dz:=1;
+ end;
+end;
+
+Function TJedMain.GizmoActive:boolean;
+begin
+ Result:=(ToolMove or ToolScale or ToolExtrude or ToolPlane or ToolInset or ToolBox or ToolBevel) and ((Mouse_Mode=MM_Select) or (Mouse_Mode=MM_DRAG) or (Mouse_Mode=MM_RotateCam) or (Mouse_Mode=MM_TranslateCam)) and (map_mode<>MM_Extra) and IsSelValid;
+ if Result and (ToolInset or ToolBox or ToolBevel) then
+  Result:=(map_mode=MM_SF) and (Level.Sectors[Cur_SC].Surfaces[Cur_SF].adjoin=nil);
+ if Result and ToolPlane then
+  Result:=(map_mode=MM_SC) or (map_mode=MM_SF) or (map_mode=MM_ED);
+ if Result and ToolExtrude then
+  Result:=(map_mode=MM_SF) and (Level.Sectors[Cur_SC].Surfaces[Cur_SF].adjoin=nil);
+ if Result and ToolScale and not ToolMove then
+  Result:=(map_mode=MM_SC) or (map_mode=MM_SF) or (map_mode=MM_TH) or (map_mode=MM_LT) or (map_mode=MM_FR);
+end;
+
+Procedure TJedMain.GizSelCenter(var ox,oy,oz:double);
+var mnx,mny,mnz,mxx,mxy,mxz:double;
+    have:boolean;
+    i,k,osc,osf:integer;
+
+ Procedure AddVx(vx:TJKVertex);
+ begin
+  if not have then
+  begin
+   mnx:=vx.x; mxx:=vx.x; mny:=vx.y; mxy:=vx.y; mnz:=vx.z; mxz:=vx.z;
+   have:=true;
+  end
+  else
+  begin
+   if vx.x<mnx then mnx:=vx.x; if vx.x>mxx then mxx:=vx.x;
+   if vx.y<mny then mny:=vx.y; if vx.y>mxy then mxy:=vx.y;
+   if vx.z<mnz then mnz:=vx.z; if vx.z>mxz then mxz:=vx.z;
+  end;
+ end;
+
+ Procedure AddSector(sc:integer);
+ var k:integer;
+ begin
+  if (sc<0) or (sc>=Level.Sectors.Count) then exit;
+  for k:=0 to Level.Sectors[sc].Vertices.Count-1 do AddVx(Level.Sectors[sc].Vertices[k]);
+ end;
+
+begin
+ have:=false;
+ case map_mode of
+  MM_SC: begin
+          AddSector(Cur_SC);
+          for i:=0 to scsel.Count-1 do AddSector(scsel.getSC(i));
+         end;
+  MM_SF: begin
+          With Level.Sectors[Cur_SC].Surfaces[Cur_SF] do
+           for i:=0 to Vertices.Count-1 do AddVx(Vertices[i]);
+          for i:=0 to sfsel.Count-1 do
+          begin
+           sfsel.GetSCSF(i,osc,osf);
+           if (osc>=0) and (osc<Level.Sectors.Count) and (osf>=0) and (osf<Level.Sectors[osc].Surfaces.Count) then
+           With Level.Sectors[osc].Surfaces[osf] do
+            for k:=0 to Vertices.Count-1 do AddVx(Vertices[k]);
+          end;
+         end;
+  MM_ED: With Level.Sectors[Cur_SC].Surfaces[Cur_SF] do
+         begin
+          AddVx(Vertices[Cur_ED]);
+          AddVx(Vertices[NextVx(Cur_ED)]);
+         end;
+ end;
+ if have then
+ begin
+  ox:=(mnx+mxx)/2; oy:=(mny+mxy)/2; oz:=(mnz+mxz)/2;
+  GizExt:=mxx-mnx;
+  if mxy-mny>GizExt then GizExt:=mxy-mny;
+  if mxz-mnz>GizExt then GizExt:=mxz-mnz;
+ end
+ else GetCurObjRefXYZ(ox,oy,oz);
+end;
+
+Procedure TJedMain.GizmoOrigin(var ox,oy,oz:double);
+begin
+ if ToolPlane then PlaneUpdate(ox,oy,oz)
+ else if ToolInset or ToolBox or ToolBevel then NJEDCalcSurfCenter(Level.Sectors[Cur_SC].Surfaces[Cur_SF],ox,oy,oz)
+ else GizSelCenter(ox,oy,oz);
+end;
+
+{Plane normal and its two in-plane directions}
+Procedure TJedMain.PlaneBase0(var n,u,v:TVector);
+begin
+ case PlaneAxis of
+  1: begin n.dx:=1; n.dy:=0; n.dz:=0;  u.dx:=0; u.dy:=1; u.dz:=0;  v.dx:=0; v.dy:=0; v.dz:=1; end;
+  2: begin n.dx:=0; n.dy:=1; n.dz:=0;  u.dx:=0; u.dy:=0; u.dz:=1;  v.dx:=1; v.dy:=0; v.dz:=0; end;
+  3: begin n.dx:=0; n.dy:=0; n.dz:=1;  u.dx:=1; u.dy:=0; u.dz:=0;  v.dx:=0; v.dy:=1; v.dz:=0; end;
+ else
+  begin
+   n:=Renderer.gnormal;
+   u:=Renderer.gxnormal;
+   v:=Renderer.gynormal;
+  end;
+ end;
+end;
+
+{Plane frame with the tilt applied; n1 is the normal after the first rotation only}
+Procedure TJedMain.PlaneBasisEx(var n,u,v,n1:TVector);
+var n0,u0,v0,u1:TVector;
+    ca,sa,cb,sb:double;
+begin
+ PlaneBase0(n0,u0,v0);
+ ca:=Cos(PlaneA); sa:=Sin(PlaneA);
+ cb:=Cos(PlaneB); sb:=Sin(PlaneB);
+ n1.dx:=n0.dx*ca+u0.dx*sa; n1.dy:=n0.dy*ca+u0.dy*sa; n1.dz:=n0.dz*ca+u0.dz*sa;
+ u1.dx:=u0.dx*ca-n0.dx*sa; u1.dy:=u0.dy*ca-n0.dy*sa; u1.dz:=u0.dz*ca-n0.dz*sa;
+ n.dx:=n1.dx*cb+v0.dx*sb; n.dy:=n1.dy*cb+v0.dy*sb; n.dz:=n1.dz*cb+v0.dz*sb;
+ v.dx:=v0.dx*cb-n1.dx*sb; v.dy:=v0.dy*cb-n1.dy*sb; v.dz:=v0.dz*cb-n1.dz*sb;
+ u:=u1;
+end;
+
+Procedure TJedMain.PlaneBasis(var n,u,v:TVector);
+var n1:TVector;
+begin
+ PlaneBasisEx(n,u,v,n1);
+end;
+
+procedure TJedMain.PlaneResetClick(Sender: TObject);
+begin
+ PlaneA:=0; PlaneB:=0;
+ PMsg.Caption:='Plane tilt reset';
+ Invalidate;
+end;
+
+{Keeps the plane centered on the current selection until the handle is dragged; returns a point on the plane}
+Procedure TJedMain.PlaneUpdate(var px,py,pz:double);
+var key:string;
+    n,u,v:TVector;
+    k:integer;
+    mnx,mny,mnz,mxx,mxy,mxz:double;
+begin
+ key:=IntToStr(map_mode)+':'+IntToStr(Cur_SC)+':'+IntToStr(Cur_SF)+':'+IntToStr(Cur_ED)+':'+
+      IntToStr(PlaneAxis)+':'+IntToStr(scsel.Count)+':'+IntToStr(sfsel.Count);
+ if key<>PlaneKey then
+ begin
+  PlaneKey:=key;
+  GizSelCenter(PlCX,PlCY,PlCZ);
+  PlOffX:=0; PlOffY:=0; PlOffZ:=0;
+  if map_mode=MM_ED then
+  With Level.Sectors[Cur_SC].Surfaces[Cur_SF] do
+  begin
+   mnx:=Vertices[0].x; mxx:=mnx; mny:=Vertices[0].y; mxy:=mny; mnz:=Vertices[0].z; mxz:=mnz;
+   for k:=1 to Vertices.Count-1 do
+   begin
+    if Vertices[k].x<mnx then mnx:=Vertices[k].x; if Vertices[k].x>mxx then mxx:=Vertices[k].x;
+    if Vertices[k].y<mny then mny:=Vertices[k].y; if Vertices[k].y>mxy then mxy:=Vertices[k].y;
+    if Vertices[k].z<mnz then mnz:=Vertices[k].z; if Vertices[k].z>mxz then mxz:=Vertices[k].z;
+   end;
+   GizExt:=mxx-mnx;
+   if mxy-mny>GizExt then GizExt:=mxy-mny;
+   if mxz-mnz>GizExt then GizExt:=mxz-mnz;
+  end;
+  PlHalf:=GizExt*0.65;
+  if PlHalf<1 then PlHalf:=1;
+ end;
+ px:=PlCX+PlOffX;
+ py:=PlCY+PlOffY;
+ pz:=PlCZ+PlOffZ;
+end;
+
+{Cleave the selected sector(s)/surface(s)/edge with the plane}
+Procedure TJedMain.DoPlaneCut;
+var n,u,v:TVector;
+    px,py,pz:double;
+    bl:TStringList;
+begin
+ if not ToolPlane then exit;
+ if not ((map_mode=MM_SC) or (map_mode=MM_SF) or (map_mode=MM_ED)) then exit;
+ if not IsSelValid then exit;
+ GizmoOrigin(px,py,pz);
+ PlaneBasis(n,u,v);
+ bl:=GeomSnap;
+ try
+  CleaveBy(n,px,py,pz);
+  GeomGuard(bl,'Plane cut');
+ finally
+  bl.Free;
+ end;
+ PlaneKey:='';
+ Invalidate;
+end;
+
+procedure TJedMain.PlaneAxisClick(Sender: TObject);
+begin
+ PlaneAxis:=(Sender as TSpeedButton).Tag;
+ PlaneA:=0; PlaneB:=0;
+ Invalidate;
+end;
+
+procedure TJedMain.PlaneCutClick(Sender: TObject);
+begin
+ DoPlaneCut;
+end;
+
+Procedure TJedMain.GizDir(a:integer;var dx,dy,dz:double);
+const EXT_SIGN=-1;   {extrude arrow points away from the sector (against the surface normal); flip to 1 if reversed}
+var pn,pu,pv:TVector;
+begin
+ if a=6 then
+ begin
+  PlaneBasis(pn,pu,pv);
+  dx:=pn.dx; dy:=pn.dy; dz:=pn.dz;
+ end
+ else
+ if a=5 then
+ begin
+  dx:=EXT_SIGN*Level.Sectors[Cur_SC].Surfaces[Cur_SF].normal.dx;
+  dy:=EXT_SIGN*Level.Sectors[Cur_SC].Surfaces[Cur_SF].normal.dy;
+  dz:=EXT_SIGN*Level.Sectors[Cur_SC].Surfaces[Cur_SF].normal.dz;
+ end
+ else GizAxisDir(a,dx,dy,dz);
+end;
+
+{---- geometry guard: the tools may not create geometry errors (same tests as the Consistency checker) ----
+
+ Sectors with the "Preview as 3DO" flag are not checked (the checker does not check them either).}
+
+{Errors of a sector are cached. A sector is only re-checked when its own geometry, or the geometry of a sector it is
+ adjoined to, has changed since the last check - so a check after an edit only looks at what was touched.}
+type
+ TGeomEntry=class
+  sig:double;
+  errs:TStringList;
+  overl:TList;
+  constructor Create;
+  destructor Destroy;override;
+ end;
+
+constructor TGeomEntry.Create;
+begin
+ errs:=TStringList.Create;
+ overl:=TList.Create;
+end;
+
+destructor TGeomEntry.Destroy;
+begin
+ errs.Free;
+ overl.Free;
+ inherited;
+end;
+
+var GeomCache:TObjectDictionary<TJKSector,TGeomEntry>=nil;
+
+{sector errors without the sector number (so the cache stays valid when sectors are inserted/deleted)}
+Procedure GeomSectorErrors(sec:TJKSector;errs:TStringList);
+var j,v:integer;
+    surf:TJKSurface;
+    d,nl:double;
+begin
+ errs.Clear;
+ if (sec.flags and SF_3DO)<>0 then exit;
+ if sec.surfaces.count<4 then begin errs.Add('has less than 4 surfaces'); exit; end;
+ if sec.vertices.count<4 then begin errs.Add('has less than 4 vertices'); exit; end;
+ if not IsSectorConvex(sec) then errs.Add('is not convex');
+ for j:=0 to sec.Surfaces.count-1 do
+ begin
+  surf:=sec.Surfaces[j];
+  if surf.Vertices.Count<3 then begin errs.Add('has a surface with less than 3 vertices'); continue; end;
+  if surf.Vertices.Count>24 then errs.Add('has a surface with more than 24 vertices');
+  nl:=Sqrt(Sqr(surf.normal.dx)+Sqr(surf.normal.dy)+Sqr(surf.normal.dz));
+  if Abs(nl-1)>0.001 then errs.Add('has a surface with an invalid normal');
+  if surf.Adjoin<>nil then
+  begin
+   if surf.Adjoin.Adjoin<>surf then errs.Add('has an invalid adjoin')
+   else if not Do_Surf_Overlap(surf,surf.Adjoin) then errs.Add('has adjoined surfaces that do not overlap');
+  end;
+  d:=surf.CalcD;
+  for v:=0 to surf.Vertices.Count-1 do
+   if Abs(surf.normal.dx*surf.Vertices[v].x+surf.normal.dy*surf.Vertices[v].y+surf.normal.dz*surf.Vertices[v].z-d)>0.001 then
+   begin errs.Add('has a surface that is not planar'); break; end;
+  if not IsSurfConvex(surf) then errs.Add('has a surface that is not convex');
+ end;
+end;
+
+{number that changes whenever the geometry of the sector changes}
+Function GeomOwnSig(sec:TJKSector):double;
+var i,k:integer;
+    r:double;
+    vx:TJKVertex;
+begin
+ r:=sec.flags*0.37+sec.surfaces.count*7.1+sec.vertices.count*13.3;
+ for i:=0 to sec.Vertices.Count-1 do
+ begin
+  vx:=sec.Vertices[i];
+  r:=r+(vx.x*1.0000123+vx.y*2.0000231+vx.z*3.0000377)*(i+1);
+ end;
+ for i:=0 to sec.Surfaces.Count-1 do
+ begin
+  if sec.Surfaces[i].Adjoin<>nil then r:=r+(i+1)*0.731;
+  for k:=0 to sec.Surfaces[i].Vertices.Count-1 do
+  begin
+   vx:=sec.Surfaces[i].Vertices[k];
+   r:=r+(vx.x*0.9000071+vx.y*1.1000043+vx.z*1.3000059)*(k+1)*(i+1)*0.001;
+  end;
+ end;
+ Result:=r;
+end;
+
+Procedure TJedMain.GeomCollect(list:TStringList);
+var i,j,k,n,p,q:integer;
+    own,tot:array of double;
+    boxes:array of Geometry.TBox;
+    changed:array of boolean;
+    sec,sec1:TJKSector;
+    e,e1:TGeomEntry;
+    b:boolean;
+begin
+ list.Sorted:=true;
+ list.Duplicates:=dupIgnore;
+ n:=Level.Sectors.Count;
+ if GeomCache=nil then GeomCache:=TObjectDictionary<TJKSector,TGeomEntry>.Create([doOwnsValues]);
+ if GeomCache.Count>2*n+50 then GeomCache.Clear;   {sectors were deleted}
+ SetLength(own,n); SetLength(tot,n); SetLength(changed,n);
+ for i:=0 to n-1 do own[i]:=GeomOwnSig(Level.Sectors[i]);
+ for i:=0 to n-1 do
+ begin
+  sec:=Level.Sectors[i];
+  tot[i]:=own[i];
+  for k:=0 to sec.Surfaces.Count-1 do
+   if sec.Surfaces[k].Adjoin<>nil then
+   begin
+    p:=Level.Sectors.IndexOf(sec.Surfaces[k].Adjoin.sector);
+    if p>=0 then tot[i]:=tot[i]+own[p]*0.5;
+   end;
+ end;
+
+ {re-check only the sectors that changed}
+ for i:=0 to n-1 do
+ begin
+  sec:=Level.Sectors[i];
+  changed[i]:=false;
+  if GeomCache.TryGetValue(sec,e) then
+   if e.sig=tot[i] then continue;
+  if e=nil then begin e:=TGeomEntry.Create; GeomCache.AddOrSetValue(sec,e); end
+  else if not GeomCache.ContainsKey(sec) then GeomCache.AddOrSetValue(sec,e);
+  e.sig:=tot[i];
+  GeomSectorErrors(sec,e.errs);
+  changed[i]:=true;
+ end;
+
+ if CheckOverlaps then
+ begin
+  SetLength(boxes,n);
+  for i:=0 to n-1 do lev_utils.FindBBox(Level.Sectors[i],boxes[i]);
+  for i:=0 to n-1 do
+  begin
+   if not changed[i] then continue;
+   sec:=Level.Sectors[i];
+   GeomCache.TryGetValue(sec,e);
+   e.overl.Clear;
+   if (sec.flags and SF_3DO)<>0 then continue;
+   for j:=0 to n-1 do
+   begin
+    if j=i then continue;
+    sec1:=Level.Sectors[j];
+    if (sec1.flags and SF_3DO)<>0 then continue;
+    b:=false;
+    for k:=0 to sec.surfaces.count-1 do
+     if (sec.surfaces[k].Adjoin<>nil) and (sec.surfaces[k].Adjoin.sector=sec1) then begin b:=true; break; end;
+    if b then continue;
+    e1:=nil;
+    GeomCache.TryGetValue(sec1,e1);
+    if lev_utils.DoBoxesIntersect(boxes[i],boxes[j]) and lev_utils.DoSectorsOverlap(sec,sec1) then
+    begin
+     e.overl.Add(sec1);
+     if (e1<>nil) and (e1.overl.IndexOf(sec)<0) then e1.overl.Add(sec);
+    end
+    else if e1<>nil then e1.overl.Remove(sec);
+   end;
+  end;
+ end;
+
+ {list of all errors with the current sector numbers}
+ for i:=0 to n-1 do
+ begin
+  sec:=Level.Sectors[i];
+  if not GeomCache.TryGetValue(sec,e) then continue;
+  for k:=0 to e.errs.Count-1 do
+   list.Add(Format('%.6d|Sector %d: %s',[i,i,e.errs[k]]));
+  for k:=0 to e.overl.Count-1 do
+  begin
+   q:=Level.Sectors.IndexOf(TJKSector(e.overl[k]));
+   if q>=0 then list.Add(Format('%.6d|Sector %d: overlaps sector %d',[i,i,q]));
+  end;
+ end;
+end;
+
+{list of the geometry errors that exist now (caller frees it)}
+
+Function TJedMain.GeomSnap:TStringList;
+
+begin
+
+ Result:=TStringList.Create;
+
+ GeomCollect(Result);
+
+end;
+
+
+
+{true when the operation created NEW geometry errors: it is then undone and the user is told why}
+
+Function TJedMain.GeomGuard(before:TStringList;const opname:string):boolean;
+
+var after:TStringList;
+
+    i:integer;
+
+    msg:string;
+
+begin
+
+ Result:=false;
+
+ if before=nil then exit;
+
+ after:=GeomSnap;
+
+ try
+
+  msg:='';
+
+  for i:=0 to after.Count-1 do
+
+   if before.IndexOf(after[i])<0 then
+
+   begin
+
+    msg:=Copy(after[i],Pos('|',after[i])+1,200);
+
+    break;
+
+   end;
+
+ finally
+
+  after.Free;
+
+ end;
+
+ if msg='' then exit;
+
+ ApplyUndo;
+
+ VerifySelection;
+
+ VerifyMultiselection;
+
+ UpdateItemEditor;
+
+ Invalidate;
+
+ PMsg.Caption:=opname+' cancelled: '+msg;
+
+ MsgBox(opname+' was cancelled because it would create bad geometry:'#13#10+msg+#13#10#13#10+
+
+        '(Set the "Preview as 3DO" flag on a sector if you really need to break the rules there.)','Geometry check',MB_OK or MB_ICONWARNING);
+
+ Result:=true;
+
+end;
+
+
+
+{called when a Move/Scale drag starts}
+
+Procedure TJedMain.GeomDragStart;
+
+begin
+
+ if not (ToolMove or ToolScale) then exit;
+
+ if GeomBefore=nil then GeomBefore:=TStringList.Create;
+
+ GeomBefore.Clear;
+
+ GeomCollect(GeomBefore);
+
+ GeomArmed:=true;
+
+end;
+
+
+
+{---- Bevel: chamfer the edges of a surface ----
+
+ Every edge of the surface that is shared with another (not adjoined) surface of the same sector is cut off by a
+
+ plane through the points that lie D away from the edge on both faces. The wedge that is cut off is split off with
+
+ the sector cleave and deleted, the new face stays as a solid surface of the sector.
+
+ ed gets 12 numbers per edge: A, B, direction into the surface, direction into the neighbour.}
+
+Function TJedMain.BevelEdgeData(surf:TJKSurface;var ed:TArray<double>;var dmax:double;var skipped:integer):integer;
+
+var sec:TJKSector;
+
+    g,k,m,n,cnt,q:integer;
+
+    va,vb:TJKVertex;
+
+    nb:TJKSurface;
+
+    ex,ey,ez,el,wx,wy,wz,wl,dd,cx,cy,cz,fx,fy,fz,lim,ext,px,py,pz,pl:double;
+
+ Procedure Centroid(sf:TJKSurface;var ax,ay,az:double);
+
+ var i:integer;
+
+ begin
+
+  ax:=0; ay:=0; az:=0;
+
+  for i:=0 to sf.Vertices.Count-1 do
+
+  begin ax:=ax+sf.Vertices[i].x; ay:=ay+sf.Vertices[i].y; az:=az+sf.Vertices[i].z; end;
+
+  ax:=ax/sf.Vertices.Count; ay:=ay/sf.Vertices.Count; az:=az/sf.Vertices.Count;
+
+ end;
+
+begin
+
+ Result:=0; skipped:=0; dmax:=0;
+
+ SetLength(ed,0);
+
+ sec:=surf.sector;
+
+ if (sec=nil) or (surf.Vertices.Count<3) then exit;
+
+ n:=surf.Vertices.Count;
+
+ Centroid(surf,cx,cy,cz);
+
+ dmax:=1e30;
+
+ for k:=0 to n-1 do
+
+ begin
+
+  va:=surf.Vertices[k]; vb:=surf.Vertices[(k+1) mod n];
+
+  nb:=nil;
+
+  for g:=0 to sec.Surfaces.Count-1 do
+
+  begin
+
+   if sec.Surfaces[g]=surf then continue;
+
+   cnt:=sec.Surfaces[g].Vertices.Count;
+
+   for m:=0 to cnt-1 do
+
+    if ((sec.Surfaces[g].Vertices[m]=va) and (sec.Surfaces[g].Vertices[(m+1) mod cnt]=vb)) or
+
+       ((sec.Surfaces[g].Vertices[m]=vb) and (sec.Surfaces[g].Vertices[(m+1) mod cnt]=va)) then
+
+    begin nb:=sec.Surfaces[g]; break; end;
+
+   if nb<>nil then break;
+
+  end;
+
+  if (nb=nil) or (nb.adjoin<>nil) then begin inc(skipped); continue; end;
+
+  ex:=vb.x-va.x; ey:=vb.y-va.y; ez:=vb.z-va.z;
+
+  el:=Sqrt(ex*ex+ey*ey+ez*ez);
+
+  if el<1e-6 then begin inc(skipped); continue; end;
+
+  ex:=ex/el; ey:=ey/el; ez:=ez/el;
+
+  {direction into the surface}
+
+  wx:=cx-va.x; wy:=cy-va.y; wz:=cz-va.z;
+
+  dd:=wx*ex+wy*ey+wz*ez;
+
+  wx:=wx-dd*ex; wy:=wy-dd*ey; wz:=wz-dd*ez;
+
+  wl:=Sqrt(wx*wx+wy*wy+wz*wz);
+
+  if wl<1e-6 then begin inc(skipped); continue; end;
+
+  lim:=wl;                       {distance from the edge to the middle of the surface}
+
+  wx:=wx/wl; wy:=wy/wl; wz:=wz/wl;
+
+  {direction into the neighbour}
+
+  Centroid(nb,fx,fy,fz);
+
+  px:=fx-va.x; py:=fy-va.y; pz:=fz-va.z;
+
+  dd:=px*ex+py*ey+pz*ez;
+
+  px:=px-dd*ex; py:=py-dd*ey; pz:=pz-dd*ez;
+
+  pl:=Sqrt(px*px+py*py+pz*pz);
+
+  if pl<1e-6 then begin inc(skipped); continue; end;
+
+  px:=px/pl; py:=py/pl; pz:=pz/pl;
+
+  {how far the neighbour reaches away from the edge}
+
+  ext:=0;
+
+  for q:=0 to nb.Vertices.Count-1 do
+
+  begin
+
+   fx:=nb.Vertices[q].x-va.x; fy:=nb.Vertices[q].y-va.y; fz:=nb.Vertices[q].z-va.z;
+
+   dd:=fx*px+fy*py+fz*pz;
+
+   if dd>ext then ext:=dd;
+
+  end;
+
+  if ext<lim then lim:=ext;
+
+  if lim<dmax then dmax:=lim;
+
+  SetLength(ed,(Result+1)*12);
+
+  ed[Result*12+0]:=va.x; ed[Result*12+1]:=va.y; ed[Result*12+2]:=va.z;
+
+  ed[Result*12+3]:=vb.x; ed[Result*12+4]:=vb.y; ed[Result*12+5]:=vb.z;
+
+  ed[Result*12+6]:=wx; ed[Result*12+7]:=wy; ed[Result*12+8]:=wz;
+
+  ed[Result*12+9]:=px; ed[Result*12+10]:=py; ed[Result*12+11]:=pz;
+
+  inc(Result);
+
+ end;
+
+ if Result=0 then dmax:=0 else dmax:=dmax*0.95;
+
+end;
+
+
+
+{Texture of a bevel face: the texture of the beveled surface continues across the shared edge onto the slanted face,
+
+ so the grid lines meet at the edge. Only the slanted faces created by this bevel are touched.}
+
+Procedure BevelFixUV(sp,cp:TJKSurface);
+
+var i,j,k,n,m,iu:integer;
+
+    va,vb:TJKVertex;
+
+    ex,ey,ez,el,wsx,wsy,wsz,wcx,wcy,wcz,cx,cy,cz,d,a,b,u0,v0:double;
+
+    un,vn,unc,vnc:TVector;
+
+    found:boolean;
+
+begin
+
+ n:=sp.Vertices.Count; m:=cp.Vertices.Count;
+
+ if (n<3) or (m<3) then exit;
+
+ if (sp.TXVertices.Count<n) or (cp.TXVertices.Count<m) then exit;
+
+ found:=false;
+
+ iu:=0; va:=nil; vb:=nil;
+
+ for i:=0 to n-1 do
+
+ begin
+
+  va:=sp.Vertices[i]; vb:=sp.Vertices[(i+1) mod n];
+
+  for j:=0 to m-1 do
+
+   if ((cp.Vertices[j]=va) and (cp.Vertices[(j+1) mod m]=vb)) or
+
+      ((cp.Vertices[j]=vb) and (cp.Vertices[(j+1) mod m]=va)) then begin found:=true; break; end;
+
+  if found then begin iu:=i; break; end;
+
+ end;
+
+ if not found then exit;
+
+ ex:=vb.x-va.x; ey:=vb.y-va.y; ez:=vb.z-va.z;
+
+ el:=Sqrt(ex*ex+ey*ey+ez*ez);
+
+ if el<1e-9 then exit;
+
+ ex:=ex/el; ey:=ey/el; ez:=ez/el;
+
+ cx:=0; cy:=0; cz:=0;
+
+ for k:=0 to n-1 do begin cx:=cx+sp.Vertices[k].x; cy:=cy+sp.Vertices[k].y; cz:=cz+sp.Vertices[k].z; end;
+
+ wsx:=cx/n-va.x; wsy:=cy/n-va.y; wsz:=cz/n-va.z;
+
+ d:=wsx*ex+wsy*ey+wsz*ez; wsx:=wsx-d*ex; wsy:=wsy-d*ey; wsz:=wsz-d*ez;
+
+ el:=Sqrt(wsx*wsx+wsy*wsy+wsz*wsz);
+
+ if el<1e-9 then exit;
+
+ wsx:=wsx/el; wsy:=wsy/el; wsz:=wsz/el;
+
+ cx:=0; cy:=0; cz:=0;
+
+ for k:=0 to m-1 do begin cx:=cx+cp.Vertices[k].x; cy:=cy+cp.Vertices[k].y; cz:=cz+cp.Vertices[k].z; end;
+
+ wcx:=cx/m-va.x; wcy:=cy/m-va.y; wcz:=cz/m-va.z;
+
+ d:=wcx*ex+wcy*ey+wcz*ez; wcx:=wcx-d*ex; wcy:=wcy-d*ey; wcz:=wcz-d*ez;
+
+ el:=Sqrt(wcx*wcx+wcy*wcy+wcz*wcz);
+
+ if el<1e-9 then exit;
+
+ wcx:=wcx/el; wcy:=wcy/el; wcz:=wcz/el;
+
+ CalcUVNormals(sp,un,vn);
+
+ a:=un.dx*ex+un.dy*ey+un.dz*ez;
+
+ b:=un.dx*wsx+un.dy*wsy+un.dz*wsz;
+
+ unc.dx:=a*ex-b*wcx; unc.dy:=a*ey-b*wcy; unc.dz:=a*ez-b*wcz;
+
+ a:=vn.dx*ex+vn.dy*ey+vn.dz*ez;
+
+ b:=vn.dx*wsx+vn.dy*wsy+vn.dz*wsz;
+
+ vnc.dx:=a*ex-b*wcx; vnc.dy:=a*ey-b*wcy; vnc.dz:=a*ez-b*wcz;
+
+ u0:=sp.TXVertices[iu].u; v0:=sp.TXVertices[iu].v;
+
+ cp.Material:=sp.Material;
+
+ cp.uscale:=sp.uscale;
+
+ cp.vscale:=sp.vscale;
+
+ ArrangeTextureBy(cp,unc,vnc,sp.Vertices[iu].x,sp.Vertices[iu].y,sp.Vertices[iu].z,u0,v0);
+
+end;
+
+
+
+Procedure TJedMain.DoGizBevel;
+
+var surf:TJKSurface;
+
+    sec:TJKSector;
+
+    ed:TArray<double>;
+
+    bl:TStringList;
+
+    dmax,d,rx,ry,rz,cx,cy,cz,nx,ny,nz,pd,best,dist,tx,ty,tz:double;
+
+    p1x,p1y,p1z,p2x,p2y,p2z,ex,ey,ez,vx,vy,vz,l:double;
+
+    nc:TVector;
+
+    i,o,ne,skipped,cnt0,idx,q,k,ncut,oo:integer;
+
+    s2:TJKSurface;
+
+    cuts:TArray<double>;
+
+begin
+
+ ncut:=0;
+
+ if (map_mode<>MM_SF) or not IsSelValid then exit;
+
+ surf:=Level.Sectors[Cur_SC].Surfaces[Cur_SF];
+
+ if surf.adjoin<>nil then exit;
+
+ d:=GizF;
+
+ if d<0.0005 then exit;
+
+ ne:=BevelEdgeData(surf,ed,dmax,skipped);
+
+ if ne=0 then
+
+ begin
+
+  PMsg.Caption:='Bevel: no edge of this surface can be beveled (the neighbouring surfaces are adjoined)';
+
+  exit;
+
+ end;
+
+ if d>dmax then d:=dmax;
+
+ sec:=Level.Sectors[Cur_SC];
+
+ {a point inside the sector, to tell which side of every cut is kept}
+
+ rx:=0; ry:=0; rz:=0;
+
+ for i:=0 to sec.Vertices.Count-1 do
+
+ begin rx:=rx+sec.Vertices[i].x; ry:=ry+sec.Vertices[i].y; rz:=rz+sec.Vertices[i].z; end;
+
+ rx:=rx/sec.Vertices.Count; ry:=ry/sec.Vertices.Count; rz:=rz/sec.Vertices.Count;
+
+ nx:=surf.normal.dx; ny:=surf.normal.dy; nz:=surf.normal.dz;
+
+ pd:=nx*surf.Vertices[0].x+ny*surf.Vertices[0].y+nz*surf.Vertices[0].z;
+
+ NJEDCalcSurfCenter(surf,cx,cy,cz);
+
+
+
+ bl:=GeomSnap;
+
+ try
+
+  StartUndoRec('Bevel surface');
+
+  for i:=0 to ne-1 do
+
+  begin
+
+   o:=i*12;
+
+   p1x:=ed[o+0]+ed[o+6]*d; p1y:=ed[o+1]+ed[o+7]*d; p1z:=ed[o+2]+ed[o+8]*d;
+
+   p2x:=ed[o+0]+ed[o+9]*d; p2y:=ed[o+1]+ed[o+10]*d; p2z:=ed[o+2]+ed[o+11]*d;
+
+   ex:=ed[o+3]-ed[o+0]; ey:=ed[o+4]-ed[o+1]; ez:=ed[o+5]-ed[o+2];
+
+   vx:=p2x-p1x; vy:=p2y-p1y; vz:=p2z-p1z;
+
+   nc.dx:=ey*vz-ez*vy; nc.dy:=ez*vx-ex*vz; nc.dz:=ex*vy-ey*vx;
+
+   l:=Sqrt(nc.dx*nc.dx+nc.dy*nc.dy+nc.dz*nc.dz);
+
+   if l<1e-9 then continue;
+
+   nc.dx:=nc.dx/l; nc.dy:=nc.dy/l; nc.dz:=nc.dz/l;
+
+   {the cut plane normal must point to the part that is kept: negative side = wedge = new sector}
+
+   if nc.dx*(rx-p1x)+nc.dy*(ry-p1y)+nc.dz*(rz-p1z)<0 then
+
+   begin nc.dx:=-nc.dx; nc.dy:=-nc.dy; nc.dz:=-nc.dz; end;
+
+   if nc.dx*(ed[o+0]-p1x)+nc.dy*(ed[o+1]-p1y)+nc.dz*(ed[o+2]-p1z)>=-0.0005 then continue;
+
+   cnt0:=Level.Sectors.Count;
+
+   CleaveSector(sec,nc,p1x,p1y,p1z);
+
+   if Level.Sectors.Count>cnt0 then
+
+   begin
+
+    DeleteSector(Level,Level.Sectors.Count-1);   {remove the wedge}
+
+    SetLength(cuts,(ncut+1)*6);
+
+    cuts[ncut*6+0]:=nc.dx; cuts[ncut*6+1]:=nc.dy; cuts[ncut*6+2]:=nc.dz;
+
+    cuts[ncut*6+3]:=p1x; cuts[ncut*6+4]:=p1y; cuts[ncut*6+5]:=p1z;
+
+    inc(ncut);
+
+   end;
+
+  end;
+
+  {select the shrunken surface (same plane, closest to the old center)}
+
+  idx:=-1; best:=1e30;
+
+  for q:=0 to sec.Surfaces.Count-1 do
+
+  begin
+
+   s2:=sec.Surfaces[q];
+
+   if (s2.Vertices.Count<3) or (s2.adjoin<>nil) then continue;
+
+   if Abs(s2.normal.dx*nx+s2.normal.dy*ny+s2.normal.dz*nz)<0.999 then continue;
+
+   if Abs(s2.normal.dx*s2.Vertices[0].x+s2.normal.dy*s2.Vertices[0].y+s2.normal.dz*s2.Vertices[0].z-pd*(s2.normal.dx*nx+s2.normal.dy*ny+s2.normal.dz*nz))>0.001 then continue;
+
+   NJEDCalcSurfCenter(s2,tx,ty,tz);
+
+   dist:=Sqr(tx-cx)+Sqr(ty-cy)+Sqr(tz-cz);
+
+   if dist<best then begin best:=dist; idx:=q; end;
+
+  end;
+
+  if idx>=0 then
+
+   for i:=0 to ncut-1 do
+
+    for q:=0 to sec.Surfaces.Count-1 do
+
+    begin
+
+     s2:=sec.Surfaces[q];
+
+     if (q=idx) or (s2.adjoin<>nil) or (s2.Vertices.Count<3) then continue;
+
+     oo:=i*6;
+
+     if Abs(s2.normal.dx*cuts[oo]+s2.normal.dy*cuts[oo+1]+s2.normal.dz*cuts[oo+2])<0.999 then continue;
+
+     if Abs((s2.Vertices[0].x-cuts[oo+3])*cuts[oo]+(s2.Vertices[0].y-cuts[oo+4])*cuts[oo+1]+(s2.Vertices[0].z-cuts[oo+5])*cuts[oo+2])>0.001 then continue;
+
+     BevelFixUV(sec.Surfaces[idx],s2);
+
+    end;
+
+  sfsel.Clear;
+
+  if idx>=0 then SetCurSF(Cur_SC,idx) else SetCurSF(Cur_SC,0);
+
+  GizF:=0;
+
+  GeomGuard(bl,'Bevel');
+
+ finally
+
+  bl.Free;
+
+ end;
+
+ Invalidate;
+
+end;
+
+
+
+{---- coplanar surface overlap test (used to stop a surface move from pushing surfaces over each other) ----}
+
+type TDblArr=array of double;
+
+
+
+Function Poly2DInside(px,py:double;const pa,pb:TDblArr):boolean;
+
+var n,i,j:integer;
+
+    inside:boolean;
+
+    dx,dy,l2,t,qx,qy:double;
+
+begin
+
+ Result:=false;
+
+ n:=Length(pa);
+
+ if n<3 then exit;
+
+ inside:=false;
+
+ j:=n-1;
+
+ for i:=0 to n-1 do
+
+ begin
+
+  if ((pb[i]>py)<>(pb[j]>py)) and (px<(pa[j]-pa[i])*(py-pb[i])/(pb[j]-pb[i])+pa[i]) then inside:=not inside;
+
+  dx:=pa[i]-pa[j]; dy:=pb[i]-pb[j];
+
+  l2:=dx*dx+dy*dy;
+
+  if l2>0 then t:=((px-pa[j])*dx+(py-pb[j])*dy)/l2 else t:=0;
+
+  if t<0 then t:=0;
+
+  if t>1 then t:=1;
+
+  qx:=pa[j]+t*dx-px; qy:=pb[j]+t*dy-py;
+
+  if Sqrt(qx*qx+qy*qy)<0.0005 then exit;      {on the boundary does not count}
+
+  j:=i;
+
+ end;
+
+ Result:=inside;
+
+end;
+
+
+
+Function Seg2DCross(ax,ay,bx,by,cx,cy,dx,dy:double):boolean;
+
+var lab,lcd,d1,d2,d3,d4,e:double;
+
+begin
+
+ Result:=false;
+
+ e:=0.0005;
+
+ lab:=Sqrt(Sqr(bx-ax)+Sqr(by-ay));
+
+ lcd:=Sqrt(Sqr(dx-cx)+Sqr(dy-cy));
+
+ if (lab<1e-9) or (lcd<1e-9) then exit;
+
+ d1:=((bx-ax)*(cy-ay)-(by-ay)*(cx-ax))/lab;
+
+ d2:=((bx-ax)*(dy-ay)-(by-ay)*(dx-ax))/lab;
+
+ d3:=((dx-cx)*(ay-cy)-(dy-cy)*(ax-cx))/lcd;
+
+ d4:=((dx-cx)*(by-cy)-(dy-cy)*(bx-cx))/lcd;
+
+ Result:=(((d1>e) and (d2<-e)) or ((d1<-e) and (d2>e))) and
+
+         (((d3>e) and (d4<-e)) or ((d3<-e) and (d4>e)));
+
+end;
+
+
+
+{some points inside polygon A (centroid and points towards the corners/edges); true when one lies strictly inside B}
+
+Function SamplesInside(const aa,ab,ba,bb:TDblArr):boolean;
+
+var n,k,k2,q:integer;
+
+    cx,cy,px,py,mx,my,t:double;
+
+begin
+
+ Result:=false;
+
+ n:=Length(aa);
+
+ cx:=0; cy:=0;
+
+ for k:=0 to n-1 do begin cx:=cx+aa[k]; cy:=cy+ab[k]; end;
+
+ cx:=cx/n; cy:=cy/n;
+
+ if Poly2DInside(cx,cy,ba,bb) then begin Result:=true; exit; end;
+
+ for k:=0 to n-1 do
+
+ begin
+
+  k2:=(k+1) mod n;
+
+  for q:=0 to 2 do
+
+  begin
+
+   case q of
+
+    0: t:=0.15;
+
+    1: t:=0.5;
+
+   else t:=0.85;
+
+   end;
+
+   px:=aa[k]+t*(cx-aa[k]); py:=ab[k]+t*(cy-ab[k]);
+
+   if Poly2DInside(px,py,ba,bb) then begin Result:=true; exit; end;
+
+  end;
+
+  mx:=(aa[k]+aa[k2])/2; my:=(ab[k]+ab[k2])/2;
+
+  px:=mx+0.15*(cx-mx); py:=my+0.15*(cy-my);
+
+  if Poly2DInside(px,py,ba,bb) then begin Result:=true; exit; end;
+
+ end;
+
+end;
+
+
+
+{true when the two surfaces lie in the same plane and cover a common area}
+
+Function SurfPlanarOverlap(S,T:TJKSurface):boolean;
+
+var sa,sb,ta,tb:TDblArr;
+
+    i,j,k,k2:integer;
+
+    n,u,v:TVector;
+
+    ox,oy,oz,dx,dy,dz,d,l:double;
+
+
+
+ Procedure Proj(surf:TJKSurface;var pa,pb:TDblArr);
+
+ var q:integer;
+
+     rx,ry,rz:double;
+
+ begin
+
+  SetLength(pa,surf.Vertices.Count);
+
+  SetLength(pb,surf.Vertices.Count);
+
+  for q:=0 to surf.Vertices.Count-1 do
+
+  begin
+
+   rx:=surf.Vertices[q].x-ox; ry:=surf.Vertices[q].y-oy; rz:=surf.Vertices[q].z-oz;
+
+   pa[q]:=rx*u.dx+ry*u.dy+rz*u.dz;
+
+   pb[q]:=rx*v.dx+ry*v.dy+rz*v.dz;
+
+  end;
+
+ end;
+
+
+
+begin
+
+ Result:=false;
+
+ if (S=T) or (S.Vertices.Count<3) or (T.Vertices.Count<3) then exit;
+
+ n:=S.normal;
+
+ if Abs(n.dx*T.normal.dx+n.dy*T.normal.dy+n.dz*T.normal.dz)<0.999 then exit;
+
+ ox:=S.Vertices[0].x; oy:=S.Vertices[0].y; oz:=S.Vertices[0].z;
+
+ for i:=0 to T.Vertices.Count-1 do
+
+  if Abs((T.Vertices[i].x-ox)*n.dx+(T.Vertices[i].y-oy)*n.dy+(T.Vertices[i].z-oz)*n.dz)>0.001 then exit;
+
+ u.dx:=1; u.dy:=0; u.dz:=0;
+
+ for i:=1 to S.Vertices.Count-1 do
+
+ begin
+
+  dx:=S.Vertices[i].x-ox; dy:=S.Vertices[i].y-oy; dz:=S.Vertices[i].z-oz;
+
+  d:=dx*n.dx+dy*n.dy+dz*n.dz;
+
+  dx:=dx-d*n.dx; dy:=dy-d*n.dy; dz:=dz-d*n.dz;
+
+  l:=Sqrt(dx*dx+dy*dy+dz*dz);
+
+  if l>0.0001 then begin u.dx:=dx/l; u.dy:=dy/l; u.dz:=dz/l; break; end;
+
+ end;
+
+ v.dx:=n.dy*u.dz-n.dz*u.dy;
+
+ v.dy:=n.dz*u.dx-n.dx*u.dz;
+
+ v.dz:=n.dx*u.dy-n.dy*u.dx;
+
+ Proj(S,sa,sb);
+
+ Proj(T,ta,tb);
+
+ if SamplesInside(sa,sb,ta,tb) then begin Result:=true; exit; end;
+
+ if SamplesInside(ta,tb,sa,sb) then begin Result:=true; exit; end;
+
+ for j:=0 to Length(sa)-1 do
+
+ begin
+
+  k:=(j+1) mod Length(sa);
+
+  for i:=0 to Length(ta)-1 do
+
+  begin
+
+   k2:=(i+1) mod Length(ta);
+
+   if Seg2DCross(sa[j],sb[j],sa[k],sb[k],ta[i],tb[i],ta[k2],tb[k2]) then begin Result:=true; exit; end;
+
+  end;
+
+ end;
+
+end;
+
+
+
+{do the surfaces that use the vertices in keys overlap any other surface of their sector?}
+
+Function TJedMain.KeysOverlap(keys:TStringList):boolean;
+
+var seen:TStringList;
+
+    i,pp,sc,vx,r,r2,k:integer;
+
+    sec:TJKSector;
+
+    v:TJKVertex;
+
+begin
+
+ Result:=false;
+
+ seen:=TStringList.Create;
+
+ try
+
+  seen.Sorted:=true; seen.Duplicates:=dupIgnore;
+
+  for i:=0 to keys.Count-1 do
+
+  begin
+
+   pp:=Pos(':',keys[i]);
+
+   sc:=StrToInt(Copy(keys[i],1,pp-1));
+
+   vx:=StrToInt(Copy(keys[i],pp+1,20));
+
+   if (sc<0) or (sc>=Level.Sectors.Count) then continue;
+
+   sec:=Level.Sectors[sc];
+
+   if (vx<0) or (vx>=sec.Vertices.Count) then continue;
+
+   v:=sec.Vertices[vx];
+
+   for r:=0 to sec.Surfaces.Count-1 do
+
+    for k:=0 to sec.Surfaces[r].Vertices.Count-1 do
+
+     if sec.Surfaces[r].Vertices[k]=v then begin seen.Add(IntToStr(sc)+':'+IntToStr(r)); break; end;
+
+  end;
+
+  for i:=0 to seen.Count-1 do
+
+  begin
+
+   pp:=Pos(':',seen[i]);
+
+   sc:=StrToInt(Copy(seen[i],1,pp-1));
+
+   r:=StrToInt(Copy(seen[i],pp+1,20));
+
+   sec:=Level.Sectors[sc];
+
+   for r2:=0 to sec.Surfaces.Count-1 do
+
+    if r2<>r then
+
+     if SurfPlanarOverlap(sec.Surfaces[r],sec.Surfaces[r2]) then begin Result:=true; exit; end;
+
+  end;
+
+ finally
+
+  seen.Free;
+
+ end;
+
+end;
+
+
+
+{Collect 'sector:vertex' keys of a surface's vertices}
+Procedure TJedMain.AddSurfVertKeys(keys:TStringList;sc,sf:integer;mirror:boolean);
+var k,svx:integer;
+    surf:TJKSurface;
+begin
+ if (sc<0) or (sc>=Level.Sectors.Count) then exit;
+ if (sf<0) or (sf>=Level.Sectors[sc].Surfaces.Count) then exit;
+ surf:=Level.Sectors[sc].Surfaces[sf];
+ for k:=0 to surf.Vertices.Count-1 do
+ begin
+  svx:=Level.Sectors[sc].Vertices.IndexOf(surf.Vertices[k]);
+  if svx>=0 then keys.Add(IntToStr(sc)+':'+IntToStr(svx));
+ end;
+end;
+
+{Adds the vertices of OTHER sectors that sit exactly at the position of a vertex in keys (touching geometry)}
+Procedure TJedMain.AddWeldedKeys(keys:TStringList);
+var src:TStringList;
+    i,pp,sc,vx,q,w:integer;
+    v:TJKVertex;
+begin
+ if (ToolWeld=nil) or not ToolWeld.Checked then exit;
+ src:=TStringList.Create;
+ try
+  src.Assign(keys);
+  for i:=0 to src.Count-1 do
+  begin
+   pp:=Pos(':',src[i]);
+   sc:=StrToInt(Copy(src[i],1,pp-1));
+   vx:=StrToInt(Copy(src[i],pp+1,20));
+   if (sc<0) or (sc>=Level.Sectors.Count) then continue;
+   if (vx<0) or (vx>=Level.Sectors[sc].Vertices.Count) then continue;
+   v:=Level.Sectors[sc].Vertices[vx];
+   for q:=0 to Level.Sectors.Count-1 do
+   begin
+    for w:=0 to Level.Sectors[q].Vertices.Count-1 do
+     if ((q<>sc) or (w<>vx)) and (Abs(Level.Sectors[q].Vertices[w].x-v.x)<0.001) and (Abs(Level.Sectors[q].Vertices[w].y-v.y)<0.001) and
+        (Abs(Level.Sectors[q].Vertices[w].z-v.z)<0.001) then
+      keys.Add(IntToStr(q)+':'+IntToStr(w));
+   end;
+  end;
+ finally
+  src.Free;
+ end;
+end;
+
+{Adds the vertices that must follow to keep adjoins intact: for every vertex in keys, every surface of its
+ sector that uses it and is adjoined pulls the vertex at the same position of the adjoined surface (other sector).
+ Repeats for the new vertices.}
+Procedure TJedMain.CloseOverAdjoins(keys:TStringList);
+var queue:TStringList;
+    i,pp,sc,vx,r,m,k,asc,avx:integer;
+    v:TJKVertex;
+    sec:TJKSector;
+    surf,adj:TJKSurface;
+    key:string;
+    uses_v:boolean;
+begin
+ queue:=TStringList.Create;
+ try
+  queue.Assign(keys);
+  i:=0;
+  while i<queue.Count do
+  begin
+   pp:=Pos(':',queue[i]);
+   sc:=StrToInt(Copy(queue[i],1,pp-1));
+   vx:=StrToInt(Copy(queue[i],pp+1,20));
+   inc(i);
+   if (sc<0) or (sc>=Level.Sectors.Count) then continue;
+   sec:=Level.Sectors[sc];
+   if (vx<0) or (vx>=sec.Vertices.Count) then continue;
+   v:=sec.Vertices[vx];
+   for r:=0 to sec.Surfaces.Count-1 do
+   begin
+    surf:=sec.Surfaces[r];
+    if surf.adjoin=nil then continue;
+    uses_v:=false;
+    for k:=0 to surf.Vertices.Count-1 do
+     if surf.Vertices[k]=v then begin uses_v:=true; break; end;
+    if not uses_v then continue;
+    adj:=surf.adjoin;
+    asc:=Level.Sectors.IndexOf(adj.sector);
+    if asc<0 then continue;
+    for m:=0 to adj.Vertices.Count-1 do
+     if (Abs(adj.Vertices[m].x-v.x)<0.001) and (Abs(adj.Vertices[m].y-v.y)<0.001) and
+        (Abs(adj.Vertices[m].z-v.z)<0.001) then
+     begin
+      avx:=adj.sector.Vertices.IndexOf(adj.Vertices[m]);
+      if avx>=0 then
+      begin
+       key:=IntToStr(asc)+':'+IntToStr(avx);
+       if keys.IndexOf(key)<0 then begin keys.Add(key); queue.Add(key); end;
+      end;
+      break;
+     end;
+   end;
+  end;
+ finally
+  queue.Free;
+ end;
+end;
+
+{Move the selected surfaces. Vertices are moved one by one so that adjoined surfaces in other sectors
+ (also those adjoined to the neighbouring surfaces that share the moved vertices) follow and no gaps appear.}
+{Moves all vertices in keys ('sector:vertex') and only THEN recalculates the surfaces. Recalculating after every single vertex
+ (as moving them one by one does) works on half moved, skewed surfaces and wrecks their UV coordinates.}
+Procedure TJedMain.MoveKeysTogether(keys:TStringList;dx,dy,dz:double);
+var secs:TList;
+    i,pp,sc,vx,k:integer;
+    sec:TJKSector;
+begin
+ secs:=TList.Create;
+ try
+  for i:=0 to keys.Count-1 do
+  begin
+   pp:=Pos(':',keys[i]);
+   sc:=StrToInt(Copy(keys[i],1,pp-1));
+   vx:=StrToInt(Copy(keys[i],pp+1,20));
+   if (sc<0) or (sc>=Level.Sectors.Count) then continue;
+   sec:=Level.Sectors[sc];
+   if (vx<0) or (vx>=sec.Vertices.Count) then continue;
+   if secs.IndexOf(sec)<0 then
+   begin
+    secs.Add(sec);
+    SaveSecUndo(sec,ch_changed,sc_geo);
+   end;
+   sec.Vertices[vx].x:=sec.Vertices[vx].x+dx;
+   sec.Vertices[vx].y:=sec.Vertices[vx].y+dy;
+   sec.Vertices[vx].z:=sec.Vertices[vx].z+dz;
+  end;
+  for i:=0 to secs.Count-1 do
+  begin
+   sec:=TJKSector(secs[i]);
+   for k:=0 to sec.Surfaces.Count-1 do sec.Surfaces[k].RecalcAll;
+   SectorChanged(sec);
+  end;
+ finally
+  secs.Free;
+ end;
+end;
+
+Procedure TJedMain.MoveSurfacesWithMirror(dx,dy,dz:double);
+var keys:TStringList;
+    tmp:TVXMultiSel;
+    i,pp,ssc,ssf,svx,n,c0:integer;
+    wasBad:boolean;
+begin
+ keys:=TStringList.Create;
+ tmp:=TVXMultiSel.Create;
+ try
+  keys.Sorted:=true; keys.Duplicates:=dupIgnore;
+  AddSurfVertKeys(keys,Cur_SC,Cur_SF,false);
+  for i:=0 to sfsel.Count-1 do
+  begin
+   sfsel.GetSCSF(i,ssc,ssf);
+   AddSurfVertKeys(keys,ssc,ssf,false);
+  end;
+  n:=keys.Count;
+  {repeat until nothing new follows: welded vertices can pull adjoined ones and the other way round}
+  repeat
+   c0:=keys.Count;
+   AddWeldedKeys(keys);
+   CloseOverAdjoins(keys);
+  until keys.Count=c0;
+  PMsg.Caption:='Surface move: '+IntToStr(n)+' vertices, '+IntToStr(keys.Count-n)+' followed (touching/adjoined)';
+  wasBad:=KeysOverlap(keys);      {overlaps that already exist never block the move}
+  MoveKeysTogether(keys,dx,dy,dz);
+  {a move that pushes surfaces over each other is undone}
+  if (not wasBad) and KeysOverlap(keys) then
+  begin
+   MoveKeysTogether(keys,-dx,-dy,-dz);
+   PMsg.Caption:='Move blocked: surfaces would overlap';
+  end;
+ finally
+  tmp.Free; keys.Free;
+ end;
+end;
+
+{'sector:surface' keys of the current + selected surfaces that can be extruded (not adjoined)}
+Procedure TJedMain.GizExtrudeSurfs(keys:TStringList);
+
+ Procedure AddSF(sc,sf:integer);
+ begin
+  if (sc<0) or (sc>=Level.Sectors.Count) then exit;
+  if (sf<0) or (sf>=Level.Sectors[sc].Surfaces.Count) then exit;
+  if Level.Sectors[sc].Surfaces[sf].adjoin<>nil then exit;
+  keys.Add(IntToStr(sc)+':'+IntToStr(sf));
+ end;
+
+var i,sc,sf:integer;
+begin
+ keys.Sorted:=true;
+ keys.Duplicates:=dupIgnore;
+ AddSF(Cur_SC,Cur_SF);
+ for i:=0 to sfsel.Count-1 do
+ begin
+  sfsel.GetSCSF(i,sc,sf);
+  AddSF(sc,sf);
+ end;
+end;
+
+{---- Box Cut: cut a rectangle out of the selected surface (doors, windows) ----}
+Procedure TJedMain.BoxSetup;
+var surf:TJKSurface;
+    i:integer;
+    dx,dy,dz,d,l:double;
+begin
+ surf:=Level.Sectors[Cur_SC].Surfaces[Cur_SF];
+ BoxPX:=surf.Vertices[0].x; BoxPY:=surf.Vertices[0].y; BoxPZ:=surf.Vertices[0].z;
+ BoxN:=surf.normal;
+ BoxU.dx:=1; BoxU.dy:=0; BoxU.dz:=0;
+ for i:=1 to surf.Vertices.Count-1 do
+ begin
+  dx:=surf.Vertices[i].x-BoxPX; dy:=surf.Vertices[i].y-BoxPY; dz:=surf.Vertices[i].z-BoxPZ;
+  d:=dx*BoxN.dx+dy*BoxN.dy+dz*BoxN.dz;
+  dx:=dx-d*BoxN.dx; dy:=dy-d*BoxN.dy; dz:=dz-d*BoxN.dz;
+  l:=Sqrt(dx*dx+dy*dy+dz*dz);
+  if l>0.0001 then
+  begin
+   BoxU.dx:=dx/l; BoxU.dy:=dy/l; BoxU.dz:=dz/l;
+   break;
+  end;
+ end;
+ BoxV.dx:=BoxN.dy*BoxU.dz-BoxN.dz*BoxU.dy;
+ BoxV.dy:=BoxN.dz*BoxU.dx-BoxN.dx*BoxU.dz;
+ BoxV.dz:=BoxN.dx*BoxU.dy-BoxN.dy*BoxU.dx;
+end;
+
+Procedure TJedMain.BoxWorld(a,b:double;vx:TJKVertex);
+begin
+ vx.x:=BoxPX+BoxU.dx*a+BoxV.dx*b;
+ vx.y:=BoxPY+BoxU.dy*a+BoxV.dy*b;
+ vx.z:=BoxPZ+BoxU.dz*a+BoxV.dz*b;
+end;
+
+{screen position -> coordinates (a,b) on the surface plane}
+Function TJedMain.BoxMap(X,Y:integer;var a,b:double):boolean;
+var s,m11,m12,m21,m22,det,rx,ry,wx,wy,wz,g:double;
+    o1,o2,u1,u2,v1,v2:integer;
+begin
+ Result:=false;
+ s:=1000*Renderer.scale/16;
+ Renderer.ProjectPoint(BoxPX,BoxPY,BoxPZ,o1,o2);
+ Renderer.ProjectPoint(BoxPX+BoxU.dx*s,BoxPY+BoxU.dy*s,BoxPZ+BoxU.dz*s,u1,u2);
+ Renderer.ProjectPoint(BoxPX+BoxV.dx*s,BoxPY+BoxV.dy*s,BoxPZ+BoxV.dz*s,v1,v2);
+ m11:=(u1-o1)/s; m21:=(u2-o2)/s;
+ m12:=(v1-o1)/s; m22:=(v2-o2)/s;
+ det:=m11*m22-m12*m21;
+ if Abs(det)<1e-9 then exit;      {surface seen edge-on}
+ rx:=X-o1; ry:=Y-o2;
+ a:=(rx*m22-ry*m12)/det;
+ b:=(m11*ry-m21*rx)/det;
+ if (SnapToGrid or IsKeyPressed(VK_CONTROL)) and not IsKeyPressed(VK_SHIFT) then
+ begin
+  g:=Renderer.GridStep;
+  if g>0 then
+  begin
+   wx:=BoxPX+BoxU.dx*a+BoxV.dx*b;
+   wy:=BoxPY+BoxU.dy*a+BoxV.dy*b;
+   wz:=BoxPZ+BoxU.dz*a+BoxV.dz*b;
+   wx:=Round(wx/g)*g; wy:=Round(wy/g)*g; wz:=Round(wz/g)*g;
+   a:=(wx-BoxPX)*BoxU.dx+(wy-BoxPY)*BoxU.dy+(wz-BoxPZ)*BoxU.dz;
+   b:=(wx-BoxPX)*BoxV.dx+(wy-BoxPY)*BoxV.dy+(wz-BoxPZ)*BoxV.dz;
+  end;
+ end;
+ Result:=true;
+end;
+
+{index of the surface of the current sector (lying on the box plane) that contains point (ca,cb)}
+Function TJedMain.BoxFindPiece(ca,cb:double):integer;
+var i,k,n,j:integer;
+    sf:TJKSurface;
+    d,da,db,xa,xb,ya,yb:double;
+    inside:boolean;
+begin
+ Result:=-1;
+ for i:=0 to Level.Sectors[Cur_SC].Surfaces.Count-1 do
+ begin
+  sf:=Level.Sectors[Cur_SC].Surfaces[i];
+  n:=sf.Vertices.Count;
+  if n<3 then continue;
+  if Abs(sf.normal.dx*BoxN.dx+sf.normal.dy*BoxN.dy+sf.normal.dz*BoxN.dz)<0.999 then continue;
+  d:=(sf.Vertices[0].x-BoxPX)*BoxN.dx+(sf.Vertices[0].y-BoxPY)*BoxN.dy+(sf.Vertices[0].z-BoxPZ)*BoxN.dz;
+  if Abs(d)>0.001 then continue;
+  inside:=false;
+  j:=n-1;
+  for k:=0 to n-1 do
+  begin
+   xa:=(sf.Vertices[k].x-BoxPX)*BoxU.dx+(sf.Vertices[k].y-BoxPY)*BoxU.dy+(sf.Vertices[k].z-BoxPZ)*BoxU.dz;
+   xb:=(sf.Vertices[k].x-BoxPX)*BoxV.dx+(sf.Vertices[k].y-BoxPY)*BoxV.dy+(sf.Vertices[k].z-BoxPZ)*BoxV.dz;
+   ya:=(sf.Vertices[j].x-BoxPX)*BoxU.dx+(sf.Vertices[j].y-BoxPY)*BoxU.dy+(sf.Vertices[j].z-BoxPZ)*BoxU.dz;
+   yb:=(sf.Vertices[j].x-BoxPX)*BoxV.dx+(sf.Vertices[j].y-BoxPY)*BoxV.dy+(sf.Vertices[j].z-BoxPZ)*BoxV.dz;
+   if ((xb>cb)<>(yb>cb)) and (ca<(ya-xa)*(cb-xb)/(yb-xb)+xa) then inside:=not inside;
+   j:=k;
+  end;
+  if inside then begin Result:=i; exit; end;
+ end;
+end;
+
+{4 cleaves perpendicular to the surface isolate the rectangle as its own surface}
+Procedure TJedMain.DoGizBox;
+var amin,amax,bmin,bmax,c,eps:double;
+    mna,mxa,mnb,mxb:double;
+    pass,i,k,found,first,cnt:integer;
+    nrm:TVector;
+    cx,cy,cz,pa,pb:double;
+    list:TList;
+    sf:TJKSurface;
+    sec:TJKSector;
+    cut:boolean;
+    bl:TStringList;
+
+ Function Coplanar(s:TJKSurface):boolean;
+ begin
+  Result:=false;
+  if s.Vertices.Count<3 then exit;
+  if Abs(s.normal.dx*BoxN.dx+s.normal.dy*BoxN.dy+s.normal.dz*BoxN.dz)<0.999 then exit;
+  if Abs((s.Vertices[0].x-BoxPX)*BoxN.dx+(s.Vertices[0].y-BoxPY)*BoxN.dy+(s.Vertices[0].z-BoxPZ)*BoxN.dz)>0.001 then exit;
+  Result:=true;
+ end;
+
+ {extent of a surface in plane coordinates}
+ Procedure Range(s:TJKSurface);
+ var q:integer;
+     ua,ub:double;
+ begin
+  for q:=0 to s.Vertices.Count-1 do
+  begin
+   ua:=(s.Vertices[q].x-BoxPX)*BoxU.dx+(s.Vertices[q].y-BoxPY)*BoxU.dy+(s.Vertices[q].z-BoxPZ)*BoxU.dz;
+   ub:=(s.Vertices[q].x-BoxPX)*BoxV.dx+(s.Vertices[q].y-BoxPY)*BoxV.dy+(s.Vertices[q].z-BoxPZ)*BoxV.dz;
+   if q=0 then begin mna:=ua; mxa:=ua; mnb:=ub; mxb:=ub; end
+   else begin
+    if ua<mna then mna:=ua;
+    if ua>mxa then mxa:=ua;
+    if ub<mnb then mnb:=ub;
+    if ub>mxb then mxb:=ub;
+   end;
+  end;
+ end;
+
+begin
+ if (map_mode<>MM_SF) or not IsSelValid then exit;
+ amin:=BoxA0; amax:=BoxA1; if amin>amax then begin amin:=BoxA1; amax:=BoxA0; end;
+ bmin:=BoxB0; bmax:=BoxB1; if bmin>bmax then begin bmin:=BoxB1; bmax:=BoxB0; end;
+ if (amax-amin<0.0005) or (bmax-bmin<0.0005) then exit;
+ eps:=0.001;
+ sec:=Level.Sectors[Cur_SC];
+
+ found:=0;
+ for i:=0 to sec.Surfaces.Count-1 do
+  if Coplanar(sec.Surfaces[i]) then
+  begin
+   Range(sec.Surfaces[i]);
+   if (mxa>amin+eps) and (mna<amax-eps) and (mxb>bmin+eps) and (mnb<bmax-eps) then inc(found);
+  end;
+ if found=0 then
+ begin
+  PMsg.Caption:='Box cut: the rectangle must be on the selected surface';
+  exit;
+ end;
+
+ bl:=GeomSnap;
+ StartUndoRec('Box cut');
+ list:=TList.Create;
+ try
+  {4 cleaves perpendicular to the surface. EVERY coplanar surface of the sector crossed by a cut line inside
+   the rectangle is cut, so a box that overlaps an earlier cut never leaves pieces that overlap.
+   A surface is only cut when the line really passes through it (no cuts along existing edges).}
+  for pass:=0 to 3 do
+  begin
+   case pass of
+    0: begin nrm:=BoxU; c:=amin; pa:=c; pb:=0; end;
+    1: begin nrm:=BoxU; c:=amax; pa:=c; pb:=0; end;
+    2: begin nrm:=BoxV; c:=bmin; pa:=0; pb:=c; end;
+   else begin nrm:=BoxV; c:=bmax; pa:=0; pb:=c; end;
+   end;
+   cx:=BoxPX+BoxU.dx*pa+BoxV.dx*pb;
+   cy:=BoxPY+BoxU.dy*pa+BoxV.dy*pb;
+   cz:=BoxPZ+BoxU.dz*pa+BoxV.dz*pb;
+   list.Clear;
+   for i:=0 to sec.Surfaces.Count-1 do
+   begin
+    sf:=sec.Surfaces[i];
+    if not Coplanar(sf) then continue;
+    Range(sf);
+    if pass<2 then cut:=(mna<c-eps) and (mxa>c+eps) and (mxb>bmin+eps) and (mnb<bmax-eps)
+    else cut:=(mnb<c-eps) and (mxb>c+eps) and (mxa>amin+eps) and (mna<amax-eps);
+    if cut then list.Add(sf);
+   end;
+   for k:=0 to list.Count-1 do
+    CleaveSurface(TJKSurface(list[k]),nrm,cx,cy,cz);
+  end;
+ finally
+  list.Free;
+ end;
+
+ {select every piece that lies inside the rectangle}
+ first:=-1; cnt:=0;
+ for i:=0 to sec.Surfaces.Count-1 do
+ begin
+  sf:=sec.Surfaces[i];
+  if not Coplanar(sf) then continue;
+  Range(sf);
+  if (mna>=amin-eps) and (mxa<=amax+eps) and (mnb>=bmin-eps) and (mxb<=bmax+eps) then
+  begin
+   if first<0 then
+   begin
+    first:=i;
+    SetCurSF(Cur_SC,i);
+    sfsel.Clear;
+   end
+   else sfsel.AddSF(Cur_SC,i);
+   inc(cnt);
+  end;
+ end;
+ PMsg.Caption:='Box cut done ('+IntToStr(cnt)+' surface(s) selected): extrude them for a door/window opening.';
+ try
+  GeomGuard(bl,'Box cut');
+ finally
+  bl.Free;
+ end;
+ Invalidate;
+end;
+
+Procedure TJedMain.DoGizInset;
+var surf:TJKSurface;
+    bl:TStringList;
+begin
+ if GizF<0.005 then exit;
+ if (map_mode<>MM_SF) or not IsSelValid then exit;
+ surf:=Level.Sectors[Cur_SC].Surfaces[Cur_SF];
+ if surf.adjoin<>nil then exit;
+ bl:=GeomSnap;
+ try
+  InsetSurface(surf,GizF,true,true,true);
+  GizF:=0;
+  {select the new inner face}
+  SetCurSF(Cur_SC,Level.Sectors[Cur_SC].Surfaces.Count-1);
+  GeomGuard(bl,'Inset');
+ finally
+  bl.Free;
+ end;
+ Invalidate;
+end;
+
+Procedure TJedMain.DoGizExtrude;
+var keys,bl:TStringList;
+    i,pp,sc,sf:integer;
+    surf:TJKSurface;
+begin
+ if Abs(GizF)<0.0005 then exit;
+ if (map_mode<>MM_SF) or not IsSelValid then exit;
+ keys:=TStringList.Create;
+ bl:=nil;
+ try
+  GizExtrudeSurfs(keys);
+  if keys.Count=0 then exit;
+  bl:=GeomSnap;
+  StartUndoRec('Extrude surface(s)');
+  for i:=0 to keys.Count-1 do
+  begin
+   pp:=Pos(':',keys[i]);
+   sc:=StrToInt(Copy(keys[i],1,pp-1));
+   sf:=StrToInt(Copy(keys[i],pp+1,20));
+   surf:=Level.Sectors[sc].Surfaces[sf];
+   if surf.adjoin=nil then ExtrudeSurface(surf,GizF);
+  end;
+  GizF:=0;
+  SetCurSF(Cur_SC,Cur_SF);
+  GeomGuard(bl,'Extrude');
+ finally
+  keys.Free;
+  bl.Free;
+ end;
+end;
+
+Function TJedMain.GizmoLen:double;
+begin
+ Result:=GIZ_PX*Renderer.scale/16;
+end;
+
+Function TJedMain.GizmoPick(X,Y:integer):integer;
+var rx,ry,rz,L,ax,ay,az,best,d,t,sx,sy,len2:double;
+    ox,oy,ex,ey,a,alo,ahi:integer;
+    hx,hy,hz:double;
+    pn,pu,pv:TVector;
+begin
+ Result:=0;
+ if not GizmoActive then exit;
+ GizmoOrigin(rx,ry,rz);
+ L:=GizmoLen;
+ Renderer.ProjectPoint(rx,ry,rz,ox,oy);
+ if ToolScale and (Sqrt(Sqr(X-ox)+Sqr(Y-oy))<=10) then begin Result:=4; exit; end;
+ if ToolBox then begin Result:=10; exit; end;
+ if ToolInset or ToolBevel then
+ begin
+  hx:=Level.Sectors[Cur_SC].Surfaces[Cur_SF].Vertices[0].x;
+  hy:=Level.Sectors[Cur_SC].Surfaces[Cur_SF].Vertices[0].y;
+  hz:=Level.Sectors[Cur_SC].Surfaces[Cur_SF].Vertices[0].z;
+  Renderer.ProjectPoint(hx,hy,hz,ex,ey);
+  if Sqrt(Sqr(X-ex)+Sqr(Y-ey))<=12 then Result:=9;
+  exit;
+ end;
+ if ToolPlane then
+ begin
+  PlaneBasis(pn,pu,pv);
+  for a:=7 to 8 do
+  begin
+   if a=7 then begin hx:=rx+pu.dx*PlHalf; hy:=ry+pu.dy*PlHalf; hz:=rz+pu.dz*PlHalf; end
+   else begin hx:=rx+pv.dx*PlHalf; hy:=ry+pv.dy*PlHalf; hz:=rz+pv.dz*PlHalf; end;
+   Renderer.ProjectPoint(hx,hy,hz,ex,ey);
+   if Sqrt(Sqr(X-ex)+Sqr(Y-ey))<=12 then begin Result:=a; exit; end;
+  end;
+ end;
+ best:=12;
+ if ToolPlane then begin alo:=6; ahi:=6; end else
+ if ToolExtrude then begin alo:=5; ahi:=5; end else begin alo:=1; ahi:=3; end;
+ for a:=alo to ahi do
+ begin
+  GizDir(a,ax,ay,az);
+  Renderer.ProjectPoint(rx+ax*L,ry+ay*L,rz+az*L,ex,ey);
+  sx:=ex-ox; sy:=ey-oy;
+  len2:=sx*sx+sy*sy;
+  if len2<1 then t:=0
+  else t:=((X-ox)*sx+(Y-oy)*sy)/len2;
+  if t<0 then t:=0;
+  if t>1 then t:=1;
+  d:=Sqrt(Sqr(X-(ox+t*sx))+Sqr(Y-(oy+t*sy)));
+  if d<best then begin best:=d; Result:=a; end;
+ end;
+end;
+
+Procedure TJedMain.DrawGizmo;
+var rx,ry,rz,L,ax,ay,az:double;
+    a,k,alo,ahi:integer;
+    v1,v2:TJKVertex;
+    exkeys:TStringList;
+    ei,epp,esc,esf:integer;
+    esurf:TJKSurface;
+    hn,hu,hv:TVector;
+    isurf:TJKSurface;
+    ifac:double;
+    bvEd:TArray<double>;
+    bvMax,bvD:double;
+    bvSkip,bvN,bvI:integer;
+
+ Procedure PlaneCol;
+ begin
+  case PlaneAxis of
+   1: With clGridX do begin Renderer.SetColor(CL_Front,r,g,b); Renderer.SetColor(CL_Back,r,g,b); end;
+   2: With clGridY do begin Renderer.SetColor(CL_Front,r,g,b); Renderer.SetColor(CL_Back,r,g,b); end;
+   3: begin Renderer.SetColor(CL_Front,0,230,0); Renderer.SetColor(CL_Back,0,230,0); end;
+  else begin Renderer.SetColor(CL_Front,255,255,255); Renderer.SetColor(CL_Back,255,255,255); end;
+  end;
+ end;
+
+ {the cleave plane: a framed square with a 4x4 grid, centered on the plane point}
+ Procedure DrawPlaneQuad(cx,cy,cz:double);
+ var n,u,v:TVector;
+     q1,q2:TJKVertex;
+     i:integer;
+     h,o:double;
+ begin
+  PlaneBasis(n,u,v);
+  h:=PlHalf;
+  PlaneCol;
+  q1:=TJKVertex.Create;
+  q2:=TJKVertex.Create;
+  for i:=-2 to 2 do
+  begin
+   o:=i*h/2;
+   q1.x:=cx+u.dx*o-v.dx*h; q1.y:=cy+u.dy*o-v.dy*h; q1.z:=cz+u.dz*o-v.dz*h;
+   q2.x:=cx+u.dx*o+v.dx*h; q2.y:=cy+u.dy*o+v.dy*h; q2.z:=cz+u.dz*o+v.dz*h;
+   Renderer.DrawLine(q1,q2);
+   q1.x:=cx-u.dx*h+v.dx*o; q1.y:=cy-u.dy*h+v.dy*o; q1.z:=cz-u.dz*h+v.dz*o;
+   q2.x:=cx+u.dx*h+v.dx*o; q2.y:=cy+u.dy*h+v.dy*o; q2.z:=cz+u.dz*h+v.dz*o;
+   Renderer.DrawLine(q1,q2);
+  end;
+  q1.free; q2.free;
+ end;
+
+ {square outline (in view plane) of half size px pixels - tip of the scale handles}
+ Procedure DrawSq(cx,cy,cz,px:double);
+ var h:double;
+     q1,q2:TJKVertex;
+     k:integer;
+ begin
+  h:=px*Renderer.scale/16;
+  q1:=TJKVertex.Create;
+  q2:=TJKVertex.Create;
+  for k:=0 to 3 do
+  begin
+   case k of
+    0: begin q1.x:=cx-Renderer.xv.dx*h-Renderer.yv.dx*h; q1.y:=cy-Renderer.xv.dy*h-Renderer.yv.dy*h; q1.z:=cz-Renderer.xv.dz*h-Renderer.yv.dz*h;
+             q2.x:=cx+Renderer.xv.dx*h-Renderer.yv.dx*h; q2.y:=cy+Renderer.xv.dy*h-Renderer.yv.dy*h; q2.z:=cz+Renderer.xv.dz*h-Renderer.yv.dz*h; end;
+    1: begin q1.x:=cx+Renderer.xv.dx*h-Renderer.yv.dx*h; q1.y:=cy+Renderer.xv.dy*h-Renderer.yv.dy*h; q1.z:=cz+Renderer.xv.dz*h-Renderer.yv.dz*h;
+             q2.x:=cx+Renderer.xv.dx*h+Renderer.yv.dx*h; q2.y:=cy+Renderer.xv.dy*h+Renderer.yv.dy*h; q2.z:=cz+Renderer.xv.dz*h+Renderer.yv.dz*h; end;
+    2: begin q1.x:=cx+Renderer.xv.dx*h+Renderer.yv.dx*h; q1.y:=cy+Renderer.xv.dy*h+Renderer.yv.dy*h; q1.z:=cz+Renderer.xv.dz*h+Renderer.yv.dz*h;
+             q2.x:=cx-Renderer.xv.dx*h+Renderer.yv.dx*h; q2.y:=cy-Renderer.xv.dy*h+Renderer.yv.dy*h; q2.z:=cz-Renderer.xv.dz*h+Renderer.yv.dz*h; end;
+    3: begin q1.x:=cx-Renderer.xv.dx*h+Renderer.yv.dx*h; q1.y:=cy-Renderer.xv.dy*h+Renderer.yv.dy*h; q1.z:=cz-Renderer.xv.dz*h+Renderer.yv.dz*h;
+             q2.x:=cx-Renderer.xv.dx*h-Renderer.yv.dx*h; q2.y:=cy-Renderer.xv.dy*h-Renderer.yv.dy*h; q2.z:=cz-Renderer.xv.dz*h-Renderer.yv.dz*h; end;
+   end;
+   Renderer.DrawLine(q1,q2);
+  end;
+  q1.free; q2.free;
+ end;
+
+begin
+ if not GizmoActive then exit;
+ GizmoOrigin(rx,ry,rz);
+ L:=GizmoLen;
+ Renderer.SetCulling(r_CULLNONE);
+ v1:=TJKVertex.Create;
+ v2:=TJKVertex.Create;
+ v1.x:=rx; v1.y:=ry; v1.z:=rz;
+ if ToolPlane then DrawPlaneQuad(rx,ry,rz);
+ if ToolInset or ToolBox or ToolBevel then begin alo:=1; ahi:=0; end else
+ if ToolPlane then begin alo:=6; ahi:=6; end else
+ if ToolExtrude then begin alo:=5; ahi:=5; end else begin alo:=1; ahi:=3; end;
+ for a:=alo to ahi do
+ begin
+  GizDir(a,ax,ay,az);
+  v2.x:=rx+ax*L; v2.y:=ry+ay*L; v2.z:=rz+az*L;
+  if GizAxis=a then begin Renderer.SetColor(CL_Front,255,255,255); Renderer.SetColor(CL_Back,255,255,255); end
+  else case a of
+   1: With clGridX do begin Renderer.SetColor(CL_Front,r,g,b); Renderer.SetColor(CL_Back,r,g,b); end;
+   2: With clGridY do begin Renderer.SetColor(CL_Front,r,g,b); Renderer.SetColor(CL_Back,r,g,b); end;
+   3: begin Renderer.SetColor(CL_Front,0,230,0); Renderer.SetColor(CL_Back,0,230,0); end;
+   5: begin Renderer.SetColor(CL_Front,0,255,255); Renderer.SetColor(CL_Back,0,255,255); end;
+   6: PlaneCol;
+  end;
+  Renderer.DrawLine(v1,v2);
+  if ToolScale or ToolExtrude or ToolPlane then DrawSq(v2.x,v2.y,v2.z,5)
+  else
+  begin
+   Renderer.SetPointSize(9);
+   Renderer.DrawVertex(v2.x,v2.y,v2.z);
+  end;
+ end;
+ if ToolBox and (GizAxis=10) and (Mouse_Mode=MM_DRAG) then
+ begin
+  Renderer.SetColor(CL_Front,0,255,255); Renderer.SetColor(CL_Back,0,255,255);
+  BoxWorld(BoxA0,BoxB0,v1); BoxWorld(BoxA1,BoxB0,v2); Renderer.DrawLine(v1,v2);
+  BoxWorld(BoxA1,BoxB1,v1); Renderer.DrawLine(v2,v1);
+  BoxWorld(BoxA0,BoxB1,v2); Renderer.DrawLine(v1,v2);
+  BoxWorld(BoxA0,BoxB0,v1); Renderer.DrawLine(v2,v1);
+ end;
+ if ToolInset or ToolBevel then
+ begin
+  isurf:=Level.Sectors[Cur_SC].Surfaces[Cur_SF];
+  {handle on the first vertex, pull it towards the center}
+  if GizAxis=9 then begin Renderer.SetColor(CL_Front,255,255,255); Renderer.SetColor(CL_Back,255,255,255); end
+  else begin Renderer.SetColor(CL_Front,255,150,0); Renderer.SetColor(CL_Back,255,150,0); end;
+  v1.x:=rx; v1.y:=ry; v1.z:=rz;
+  Renderer.DrawLine(v1,isurf.Vertices[0]);
+  DrawSq(isurf.Vertices[0].x,isurf.Vertices[0].y,isurf.Vertices[0].z,6);
+  {bevel preview: the two lines of every chamfer, on the surface and on its neighbour}
+  if ToolBevel and (GizAxis=9) and (Mouse_Mode=MM_DRAG) and (GizF>0.0005) then
+  begin
+   bvN:=BevelEdgeData(isurf,bvEd,bvMax,bvSkip);
+   bvD:=GizF;
+   Renderer.SetColor(CL_Front,0,255,255); Renderer.SetColor(CL_Back,0,255,255);
+   for bvI:=0 to bvN-1 do
+   begin
+    v1.x:=bvEd[bvI*12+0]+bvEd[bvI*12+6]*bvD; v1.y:=bvEd[bvI*12+1]+bvEd[bvI*12+7]*bvD; v1.z:=bvEd[bvI*12+2]+bvEd[bvI*12+8]*bvD;
+    v2.x:=bvEd[bvI*12+3]+bvEd[bvI*12+6]*bvD; v2.y:=bvEd[bvI*12+4]+bvEd[bvI*12+7]*bvD; v2.z:=bvEd[bvI*12+5]+bvEd[bvI*12+8]*bvD;
+    Renderer.DrawLine(v1,v2);
+    v1.x:=bvEd[bvI*12+0]+bvEd[bvI*12+9]*bvD; v1.y:=bvEd[bvI*12+1]+bvEd[bvI*12+10]*bvD; v1.z:=bvEd[bvI*12+2]+bvEd[bvI*12+11]*bvD;
+    v2.x:=bvEd[bvI*12+3]+bvEd[bvI*12+9]*bvD; v2.y:=bvEd[bvI*12+4]+bvEd[bvI*12+10]*bvD; v2.z:=bvEd[bvI*12+5]+bvEd[bvI*12+11]*bvD;
+    Renderer.DrawLine(v1,v2);
+   end;
+  end;
+  {preview of the inner outline}
+  if ToolInset and (GizAxis=9) and (Mouse_Mode=MM_DRAG) and (GizF>0.002) then
+  begin
+   ifac:=1-GizF;
+   Renderer.SetColor(CL_Front,0,255,255); Renderer.SetColor(CL_Back,0,255,255);
+   for k:=0 to isurf.Vertices.Count-1 do
+   begin
+    v1.x:=rx+(isurf.Vertices[k].x-rx)*ifac; v1.y:=ry+(isurf.Vertices[k].y-ry)*ifac; v1.z:=rz+(isurf.Vertices[k].z-rz)*ifac;
+    v2.x:=rx+(isurf.Vertices[isurf.NextVx(k)].x-rx)*ifac; v2.y:=ry+(isurf.Vertices[isurf.NextVx(k)].y-ry)*ifac; v2.z:=rz+(isurf.Vertices[isurf.NextVx(k)].z-rz)*ifac;
+    Renderer.DrawLine(v1,v2);
+    Renderer.DrawLine(v1,isurf.Vertices[k]);
+   end;
+  end;
+ end;
+ if ToolPlane then
+ begin
+  PlaneBasis(hn,hu,hv);
+  if GizAxis=7 then Renderer.SetColor(CL_Front,255,255,255) else Renderer.SetColor(CL_Front,255,150,0);
+  DrawSq(rx+hu.dx*PlHalf,ry+hu.dy*PlHalf,rz+hu.dz*PlHalf,6);
+  if GizAxis=8 then Renderer.SetColor(CL_Front,255,255,255) else Renderer.SetColor(CL_Front,255,150,0);
+  DrawSq(rx+hv.dx*PlHalf,ry+hv.dy*PlHalf,rz+hv.dz*PlHalf,6);
+ end;
+ if GizAxis=4 then Renderer.SetColor(CL_Front,255,255,255) else Renderer.SetColor(CL_Front,200,200,200);
+ if ToolScale then DrawSq(rx,ry,rz,8)
+ else
+ begin
+  Renderer.SetPointSize(6);
+  Renderer.DrawVertex(rx,ry,rz);
+ end;
+ Renderer.SetPointSize(1);
+ {extrude preview: outline of the surface at the new position}
+ if ToolExtrude and (GizAxis=5) and (Mouse_Mode=MM_DRAG) and (Abs(GizF)>0.0005) then
+ begin
+  Renderer.SetColor(CL_Front,0,255,255); Renderer.SetColor(CL_Back,0,255,255);
+  exkeys:=TStringList.Create;
+  try
+   GizExtrudeSurfs(exkeys);
+   for ei:=0 to exkeys.Count-1 do
+   begin
+    epp:=Pos(':',exkeys[ei]);
+    esc:=StrToInt(Copy(exkeys[ei],1,epp-1));
+    esf:=StrToInt(Copy(exkeys[ei],epp+1,20));
+    esurf:=Level.Sectors[esc].Surfaces[esf];
+    {each surface is extruded away from its sector, against its own normal}
+    ax:=-esurf.normal.dx; ay:=-esurf.normal.dy; az:=-esurf.normal.dz;
+    With esurf do
+     for k:=0 to Vertices.Count-1 do
+     begin
+      v1.x:=Vertices[k].x+ax*GizF; v1.y:=Vertices[k].y+ay*GizF; v1.z:=Vertices[k].z+az*GizF;
+      v2.x:=Vertices[NextVx(k)].x+ax*GizF; v2.y:=Vertices[NextVx(k)].y+ay*GizF; v2.z:=Vertices[NextVx(k)].z+az*GizF;
+      Renderer.DrawLine(v1,v2);
+      Renderer.DrawLine(v1,Vertices[k]);
+     end;
+   end;
+  finally
+   exkeys.Free;
+  end;
+ end;
+ v1.free; v2.free;
+end;
+
+Procedure TJedMain.Do_StartGizmo(X,Y:integer);
+var a:integer;
+    pn,pu,pv,pn1:TVector;
+begin
+ a:=GizAxis;
+ if ToolScale and (a>0) then GeomDragStart;
+ if ToolBox then
+ begin
+  BoxSetup;
+  if not BoxMap(GizDownX,GizDownY,BoxA0,BoxB0) then
+  begin
+   PMsg.Caption:='Box cut: the surface is seen edge-on, rotate the view';
+   GizAxis:=0;
+   exit;
+  end;
+  BoxA1:=BoxA0; BoxB1:=BoxB0;
+  SetMouseMode(MM_DRAG);
+  GizAxis:=a;
+  exit;
+ end;
+ if ToolInset or ToolBevel then
+ begin
+  SetMouseMode(MM_DRAG);
+  GizAxis:=a;
+  GizDownX:=X; GizDownY:=Y;
+  GizmoOrigin(GizOX,GizOY,GizOZ);     {surface center}
+  GizDX:=Level.Sectors[Cur_SC].Surfaces[Cur_SF].Vertices[0].x;
+  GizDY:=Level.Sectors[Cur_SC].Surfaces[Cur_SF].Vertices[0].y;
+  GizDZ:=Level.Sectors[Cur_SC].Surfaces[Cur_SF].Vertices[0].z;
+  GizF:=0;
+  exit;
+ end;
+ if ToolPlane then
+ begin
+  SetMouseMode(MM_DRAG);
+  GizAxis:=a;
+  GizDownX:=X; GizDownY:=Y;
+  GizmoOrigin(GizOX,GizOY,GizOZ);
+  GizF:=PlaneA; GizF2:=PlaneB;     {tilt when the drag started}
+  if (a=7) or (a=8) then
+  begin
+   PlaneBasisEx(pn,pu,pv,pn1);
+   if a=7 then
+   begin
+    GizOX:=GizOX+pu.dx*PlHalf; GizOY:=GizOY+pu.dy*PlHalf; GizOZ:=GizOZ+pu.dz*PlHalf;
+    GizDX:=-pn1.dx; GizDY:=-pn1.dy; GizDZ:=-pn1.dz;
+   end
+   else
+   begin
+    GizOX:=GizOX+pv.dx*PlHalf; GizOY:=GizOY+pv.dy*PlHalf; GizOZ:=GizOZ+pv.dz*PlHalf;
+    GizDX:=-pn.dx; GizDY:=-pn.dy; GizDZ:=-pn.dz;
+   end;
+  end;
+  exit;
+ end;
+ if ToolExtrude then
+ begin
+  SetMouseMode(MM_DRAG);
+  GizAxis:=a;
+  GizDownX:=X; GizDownY:=Y;   {distance is measured from where the drag really starts}
+  GizmoOrigin(GizOX,GizOY,GizOZ);
+  GizF:=0;
+  exit;
+ end;
+ if ToolScale then
+
+ begin
+
+  GizScaleInit:=false;
+
+  SetMouseMode(MM_DRAG);
+
+  case map_mode of
+
+   MM_SC: StartUndoRec('Scale sector(s)');
+   MM_SF: StartUndoRec('Scale surface(s)');
+   MM_TH: StartUndoRec('Scale thing(s)');
+   MM_LT: StartUndoRec('Scale light(s)');
+   MM_FR: StartUndoRec('Scale frame(s)');
+  end;
+  GizAxis:=a;
+  GizDownX:=X; GizDownY:=Y;
+  GizmoOrigin(GizOX,GizOY,GizOZ);
+  GizF:=1;
+  exit;
+ end;
+ Do_StartDrag(X,Y);
+ if Mouse_Mode<>MM_DRAG then begin GizAxis:=0; exit; end;
+ GizAxis:=a;
+ GizDownX:=X; GizDownY:=Y;
+ GizmoOrigin(GizOX,GizOY,GizOZ);
+end;
+
+Procedure TJedMain.Do_ProceedGizmo(X,Y:integer);
+var L,ax,ay,az,sx,sy,len2,t,rx,ry,rz,dx,dy,dz:double;
+    ox,oy,ex,ey:integer;
+var sd:TScaleData;
+    bvEd:TArray<double>;
+    bvMax,bvT:double;
+    bvSkip:integer;
+    nf,ratio,lpx,d,c0,nt:double;
+    idx:integer;
+    added:boolean;
+    keys:TStringList;
+    tmpsel:TVXMultiSel;
+    ssc,ssf,svx,pp:integer;
+    vv:TJKVertex;
+
+ Procedure CollectSF(sc,sf:integer);
+ var k:integer;
+ begin
+  if (sc<0) or (sc>=Level.Sectors.Count) then exit;
+  if (sf<0) or (sf>=Level.Sectors[sc].Surfaces.Count) then exit;
+  AddSurfVertKeys(keys,sc,sf,false);
+ end;
+
+
+
+ Procedure ExtVert(v:TJKVertex);
+
+ begin
+
+  if (GizAxis=1) or (GizAxis=4) then if Abs(v.x-GizOX)>Abs(GizScaleExt) then begin GizScaleExt:=v.x-GizOX; GizScaleBase:=v.x; end;
+
+  if (GizAxis=2) or (GizAxis=4) then if Abs(v.y-GizOY)>Abs(GizScaleExt) then begin GizScaleExt:=v.y-GizOY; GizScaleBase:=v.y; end;
+
+  if (GizAxis=3) or (GizAxis=4) then if Abs(v.z-GizOZ)>Abs(GizScaleExt) then begin GizScaleExt:=v.z-GizOZ; GizScaleBase:=v.z; end;
+
+ end;
+
+
+
+ Procedure ExtSector(sc:integer);
+
+ var k:integer;
+
+ begin
+
+  if (sc<0) or (sc>=Level.Sectors.Count) then exit;
+
+  for k:=0 to Level.Sectors[sc].Vertices.Count-1 do ExtVert(Level.Sectors[sc].Vertices[k]);
+
+ end;
+
+
+
+begin
+
+ if GizAxis=0 then exit;
+
+ L:=GizmoLen;
+
+ if ToolBox then
+ begin
+  if BoxMap(X,Y,BoxA1,BoxB1) then
+   PMsg.Caption:=Format('Box cut: %.3f x %.3f',[Abs(BoxA1-BoxA0),Abs(BoxB1-BoxB0)]);
+  Invalidate;
+  exit;
+ end;
+ if ToolInset or ToolBevel then
+ begin
+  Renderer.ProjectPoint(GizOX,GizOY,GizOZ,ox,oy);
+  Renderer.ProjectPoint(GizDX,GizDY,GizDZ,ex,ey);
+  sx:=ox-ex; sy:=oy-ey;
+  len2:=sx*sx+sy*sy;
+  if len2<64 then exit;
+  nt:=((X-GizDownX)*sx+(Y-GizDownY)*sy)/len2;
+  if nt<0 then nt:=0;
+  if nt>0.95 then nt:=0.95;
+  if ToolBevel then
+  begin
+   BevelEdgeData(Level.Sectors[Cur_SC].Surfaces[Cur_SF],bvEd,bvMax,bvSkip);
+   bvT:=nt/0.95*bvMax;
+   if (SnapToGrid or IsKeyPressed(VK_CONTROL)) and not IsKeyPressed(VK_SHIFT) then
+    if Renderer.GridStep>0 then bvT:=Round(bvT/Renderer.GridStep)*Renderer.GridStep;
+   if bvT>bvMax then bvT:=bvMax;
+   GizF:=bvT;
+   PMsg.Caption:=Format('Bevel: %.3f (max %.3f)',[bvT,bvMax]);
+  end
+  else
+  begin
+   GizF:=nt;
+   PMsg.Caption:=Format('Inset: %.0f%%',[nt*100]);
+  end;
+  Invalidate;
+  exit;
+ end;
+ if ToolPlane then
+ begin
+  if GizAxis=6 then GizDir(6,ax,ay,az)
+  else begin ax:=GizDX; ay:=GizDY; az:=GizDZ; end;
+  Renderer.ProjectPoint(GizOX,GizOY,GizOZ,ox,oy);
+  Renderer.ProjectPoint(GizOX+ax*L,GizOY+ay*L,GizOZ+az*L,ex,ey);
+  sx:=ex-ox; sy:=ey-oy;
+  len2:=sx*sx+sy*sy;
+  if len2<4 then exit;
+  if len2<1600 then len2:=1600;
+  t:=(((X-GizDownX)*sx+(Y-GizDownY)*sy)/len2)*L;
+  if GizAxis=6 then
+  begin
+   nt:=t;
+   if (PlaneAxis<=3) and (Abs(PlaneA)<0.0001) and (Abs(PlaneB)<0.0001) and
+      (SnapToGrid or IsKeyPressed(VK_CONTROL)) and not IsKeyPressed(VK_SHIFT) and (Renderer.GridStep>0) then
+   begin
+    case PlaneAxis of
+     1: c0:=GizOX;
+     2: c0:=GizOY;
+    else c0:=GizOZ;
+    end;
+    nt:=Round((c0+nt)/Renderer.GridStep)*Renderer.GridStep-c0;
+   end;
+   PlOffX:=GizOX+ax*nt-PlCX;
+   PlOffY:=GizOY+ay*nt-PlCY;
+   PlOffZ:=GizOZ+az*nt-PlCZ;
+  end
+  else
+  begin
+   {tilt: moving the edge handle by t turns the plane by t/halfsize radians}
+   nt:=t/PlHalf;
+   if GizAxis=7 then nt:=GizF+nt else nt:=GizF2+nt;
+   if IsKeyPressed(VK_CONTROL) then nt:=Round(nt/(Pi/12))*(Pi/12);   {Ctrl: 15 degree steps}
+   if GizAxis=7 then PlaneA:=nt else PlaneB:=nt;
+   PMsg.Caption:=Format('Plane tilt: %.1f / %.1f degrees (Ctrl = 15 degree steps)',[PlaneA*180/Pi,PlaneB*180/Pi]);
+  end;
+  Invalidate;
+  exit;
+ end;
+ if ToolExtrude then
+ begin
+  GizDir(5,ax,ay,az);
+  Renderer.ProjectPoint(GizOX,GizOY,GizOZ,ox,oy);
+  Renderer.ProjectPoint(GizOX+ax*L,GizOY+ay*L,GizOZ+az*L,ex,ey);
+  sx:=ex-ox; sy:=ey-oy;
+  len2:=sx*sx+sy*sy;
+  if len2<4 then exit;
+  if len2<1600 then len2:=1600;   {axis nearly points at the camera: limit the sensitivity}
+  t:=(((X-GizDownX)*sx+(Y-GizDownY)*sy)/len2)*L;
+  if (SnapToGrid or IsKeyPressed(VK_CONTROL)) and not IsKeyPressed(VK_SHIFT) then   {snaps like the other tools, hold Shift to extrude freely}
+   if Renderer.GridStep>0 then t:=Round(t/Renderer.GridStep)*Renderer.GridStep;
+  GizF:=t;
+  Invalidate;
+  exit;
+ end;
+ if ToolScale then
+ begin
+  if GizAxis=4 then
+  begin
+   d:=(X-GizDownX)-(Y-GizDownY);
+   lpx:=100;
+  end
+  else
+  begin
+   GizAxisDir(GizAxis,ax,ay,az);
+   Renderer.ProjectPoint(GizOX,GizOY,GizOZ,ox,oy);
+   Renderer.ProjectPoint(GizOX+ax*L,GizOY+ay*L,GizOZ+az*L,ex,ey);
+   sx:=ex-ox; sy:=ey-oy;
+   len2:=sx*sx+sy*sy;
+   if len2<4 then exit;
+   lpx:=Sqrt(len2);
+   d:=((X-GizDownX)*sx+(Y-GizDownY)*sy)/lpx;
+   if lpx<30 then lpx:=30;
+  end;
+  nf:=1+d/lpx;
+
+  if nf<0.02 then nf:=0.02;
+
+  {snap: the size of the selection (along the axis, from the pivot) changes in grid steps}
+
+  if ((map_mode=MM_SF) or (map_mode=MM_SC)) and (Renderer.GridStep>0) and
+
+     ((SnapToGrid or IsKeyPressed(VK_CONTROL)) and not IsKeyPressed(VK_SHIFT)) then
+
+  begin
+
+   if not GizScaleInit then
+
+   begin
+
+    GizScaleInit:=true;
+
+    GizScaleExt:=0;
+
+    if map_mode=MM_SC then
+
+    begin
+
+     ExtSector(Cur_SC);
+
+     for idx:=0 to scsel.Count-1 do ExtSector(scsel.GetSC(idx));
+
+    end else
+
+    begin
+
+    keys:=TStringList.Create;
+
+    keys.Sorted:=true;
+
+    keys.Duplicates:=dupIgnore;
+
+    try
+
+     CollectSF(Cur_SC,Cur_SF);
+
+     for idx:=0 to sfsel.Count-1 do
+
+     begin
+
+      sfsel.GetSCSF(idx,ssc,ssf);
+
+      CollectSF(ssc,ssf);
+
+     end;
+
+     AddWeldedKeys(keys);
+
+     CloseOverAdjoins(keys);
+
+     for idx:=0 to keys.Count-1 do
+
+     begin
+
+      pp:=Pos(':',keys[idx]);
+
+      ssc:=StrToInt(Copy(keys[idx],1,pp-1));
+
+      svx:=StrToInt(Copy(keys[idx],pp+1,20));
+
+      vv:=Level.Sectors[ssc].Vertices[svx];
+
+      ExtVert(vv);
+
+     end;
+
+    finally
+
+     keys.Free;
+
+    end;
+
+    end;
+
+   end;
+
+   if Abs(GizScaleExt)>0.0001 then
+
+   begin
+
+    {the vertex farthest from the pivot lands on a grid line}
+
+    c0:=GizScaleBase+GizScaleExt*(nf-1);
+
+    nt:=Round(c0/Renderer.GridStep)*Renderer.GridStep;
+
+    {magnetic: pulled onto the grid line only when the pointer is within 10 pixels of it, otherwise it follows the pointer smoothly}
+
+    if Abs(nt-c0)*lpx/Abs(GizScaleExt)<=10 then
+
+    begin
+
+     nf:=1+(nt-GizScaleBase)/GizScaleExt;
+
+     if nf<0.02 then nf:=0.02;
+
+     PMsg.Caption:='Scale: on grid';
+
+    end;
+
+   end;
+
+  end;
+
+  ratio:=nf/GizF;
+  if Abs(ratio-1)<0.000001 then exit;
+  sd.sfactor:=ratio;
+  case GizAxis of
+   1: sd.how:=scale_x;
+   2: sd.how:=scale_y;
+   3: sd.how:=scale_z;
+  else sd.how:=scale_XYZ;
+  end;
+  sd.cx:=GizOX; sd.cy:=GizOY; sd.cz:=GizOZ;
+  case map_mode of
+   MM_SF: begin
+           keys:=TStringList.Create;
+           keys.Sorted:=true;
+           keys.Duplicates:=dupIgnore;
+           tmpsel:=TVXMultiSel.Create;
+           try
+            CollectSF(Cur_SC,Cur_SF);
+            for idx:=0 to sfsel.Count-1 do
+            begin
+             sfsel.GetSCSF(idx,ssc,ssf);
+             CollectSF(ssc,ssf);
+            end;
+            AddWeldedKeys(keys);
+            CloseOverAdjoins(keys);
+            for idx:=0 to keys.Count-1 do
+            begin
+             pp:=Pos(':',keys[idx]);
+             ssc:=StrToInt(Copy(keys[idx],1,pp-1));
+             svx:=StrToInt(Copy(keys[idx],pp+1,20));
+             vv:=Level.Sectors[ssc].Vertices[svx];
+             dx:=0; dy:=0; dz:=0;
+             if (GizAxis=1) or (GizAxis=4) then dx:=(vv.x-GizOX)*(ratio-1);
+             if (GizAxis=2) or (GizAxis=4) then dy:=(vv.y-GizOY)*(ratio-1);
+             if (GizAxis=3) or (GizAxis=4) then dz:=(vv.z-GizOZ)*(ratio-1);
+             TranslateVertices(level,tmpsel,ssc,svx,dx,dy,dz);
+            end;
+           finally
+            tmpsel.Free;
+            keys.Free;
+           end;
+          end;
+   MM_SC: begin
+           idx:=scsel.FindSC(Cur_SC);
+           added:=idx=-1;
+           if added then idx:=scsel.AddSC(Cur_SC);
+           ScaleSectors(level,scsel,sd,false);
+           if added then scsel.DeleteN(idx);
+          end;
+   MM_TH: begin
+           idx:=thsel.FindTH(Cur_TH);
+           added:=idx=-1;
+           if added then idx:=thsel.AddTH(Cur_TH);
+           ScaleThings(level,thsel,sd);
+           if added then thsel.DeleteN(idx);
+          end;
+   MM_LT: begin
+           idx:=ltsel.FindLT(Cur_LT);
+           added:=idx=-1;
+           if added then idx:=ltsel.AddLT(Cur_LT);
+           ScaleLights(level,ltsel,sd);
+           if added then ltsel.DeleteN(idx);
+          end;
+   MM_FR: begin
+           idx:=frsel.FindFR(Cur_TH,Cur_FR);
+           added:=idx=-1;
+           if added then idx:=frsel.AddFR(Cur_TH,Cur_FR);
+           ScaleFrames(level,frsel,sd);
+           if added then frsel.DeleteN(idx);
+          end;
+  end;
+  GizF:=nf;
+  Invalidate;
+  exit;
+ end;
+ GizAxisDir(GizAxis,ax,ay,az);
+ Renderer.ProjectPoint(GizOX,GizOY,GizOZ,ox,oy);
+ Renderer.ProjectPoint(GizOX+ax*L,GizOY+ay*L,GizOZ+az*L,ex,ey);
+ sx:=ex-ox; sy:=ey-oy;
+ len2:=sx*sx+sy*sy;
+ if len2<4 then exit;     {axis points at the camera - can't drag along it}
+ if len2<1600 then len2:=1600;
+ t:=(((X-GizDownX)*sx+(Y-GizDownY)*sy)/len2)*L;
+ if SnapToGrid and not IsKeyPressed(VK_SHIFT) then   {hold Shift to move freely}
+  if Renderer.GridStep>0 then t:=Round(t/Renderer.GridStep)*Renderer.GridStep;
+ GizmoOrigin(rx,ry,rz);
+ dx:=GizOX+ax*t-rx;
+ dy:=GizOY+ay*t-ry;
+ dz:=GizOZ+az*t-rz;
+ case map_mode of
+  MM_SC: TranslateSectors(level,scsel,Cur_SC,dx,dy,dz);
+  MM_SF: MoveSurfacesWithMirror(dx,dy,dz);
+  MM_VX: TranslateVertices(level,vxsel,cur_SC,Cur_VX,dx,dy,dz);
+  MM_ED: TranslateEdges(level,edsel,Cur_SC,Cur_SF,Cur_ED,dx,dy,dz);
+  MM_TH: TranslateThings(level,thsel,Cur_TH,dx,dy,dz,MoveFrames);
+  MM_FR: if Cur_FR=-1 then TranslateThingKeepFrame(Level,Cur_TH,dx,dy,dz)
+         else TranslateFrames(level,frsel,Cur_TH,Cur_FR,dx,dy,dz);
+  MM_LT: TranslateLights(level,ltsel,Cur_LT,dx,dy,dz);
+ end;
+ Invalidate;
+end;
+
 Procedure TJedMain.ReDraw;
 var s,th:integer;
     v1,v2:TJKVertex;
@@ -995,6 +3597,7 @@ try
  With clGrid do Renderer.SetColor(CL_Front,r,g,b);
  Renderer.SetPointSize(1);
  //glfinish;
+ Renderer.HideGrid:=GridHidden;
  Renderer.DrawGrid;
  //gdiflush;
  if map_mode=MM_VX then
@@ -1172,6 +3775,9 @@ end;
            Renderer.DrawVertex(x,y,z);
          end;
  end;
+
+{Gizmo is drawn before the selection: the light radius circle leaves OpenGL in a 2D projection}
+ DrawGizmo;
 
 {Draw Selection}
  With clMapSel do Renderer.SetColor(CL_Front,r,g,b);
@@ -1365,6 +3971,9 @@ begin
 
  if MWMaxed then WindowState:=wsMaximized;
 
+ SyncRecents; // show recent files saved from the last session
+ BuildToolStrip;
+
  tcube:=TPolygons.Create;
  tcube.VXList:=Tvertices.Create;
  for i:=1 to 8 do tcube.VXList.Add(TVertex.Create);
@@ -1423,6 +4032,7 @@ Screen.Cursors[crSaber]:=LoadCursor(HInstance,PChar('SABER'));
  AddKBItem(miGrid,'Snap grid to item','W',[ssShift]);
  AddKBItem(MiGrid,'Move Grid'#9'G+Mouse',#0,[]);
  AddKBItem(MiGrid,'Swap Grid axis','G',[ssShift]);
+ AddKBItem(MiGrid,'Show/hide grid','G',[ssCtrl,ssShift]);
 
  AddKBItem(MiSel,'Next item','N',[]);
  AddKBItem(MiSel,'Prev item','P',[]);
@@ -1558,6 +4168,35 @@ var  th:TJKThing;
      s:string;
 begin
  if (key=VK_MENU) or (key=VK_LMENU) then exit;
+
+ {Space while dragging a cleave: toggle glowing blade / plain alignment line}
+ if CleaveStarted and (Key=VK_SPACE) then
+ begin
+  if not CleaveSpaceDown then   {key auto-repeat would toggle over and over}
+  begin
+   CleaveSpaceDown:=true;
+   CleavePlainLine:=not CleavePlainLine;
+   if (WireFrameAPI = WF_OpenGL) and (Renderer is TOGLRenderer) then
+   begin
+    TOGLRenderer(Renderer).OverlayLineGlow:=not CleavePlainLine;
+    TOGLRenderer(Renderer).OverlayGlowOn:=not CleavePlainLine;
+    Redraw;
+   end;
+  end;
+  Key:=0;
+  exit;
+ end;
+
+ {Ctrl+Shift+G: show / hide the grid}
+ if Shift=[ssCtrl,ssShift] then
+ case key of
+  Ord('G'): begin
+             GridHidden:=not GridHidden;
+             Invalidate;
+             Key:=0;
+             exit;
+            end;
+ end;
 
  if Shift=[ssCtrl,ssAlt] then
  case key of
@@ -2346,14 +4985,10 @@ begin
   LastX := CleaveOrgXY.X;
   LastY := CleaveOrgXY.Y;
 
-  // Only switch to XOR rubber-band drawing once the cleave really starts
-  if WireFrameAPI = WF_OpenGL then
-  begin
-    firstpass := True;
-    glDrawBuffer(GL_FRONT);
-    glEnable(GL_COLOR_LOGIC_OP);
-    glLogicOp(GL_XOR);
-  end;
+  // OpenGL: the glowing line is drawn as an overlay inside the normal frame
+  // (see TOGLRenderer.DrawOverlayLine); it appears on the first mouse move
+  if (WireFrameAPI = WF_OpenGL) and (Renderer is TOGLRenderer) then
+    TOGLRenderer(Renderer).OverlayLineOn := False;
 
   SetMouseMode(MM_Cleave);
   CleaveStarted := True;
@@ -2364,10 +4999,11 @@ Procedure TJedMain.Do_ProceedCleave(X, Y: Integer; snapToVertex: Boolean);
 var
   fx, fy, fz, lx, ly, lz: Double;
   snapToGrid: Boolean;
+  sx, sy: Integer;
 begin
   if not CleaveStarted then
     Exit;
-     PMsg.Caption:='Proceed Cleave';
+     PMsg.Caption:='Proceed Cleave  (Space: glow / plain line)';
   lx := CleaveOrg.x;
   ly := CleaveOrg.y;
   lz := CleaveOrg.z;
@@ -2395,36 +5031,26 @@ begin
     LastX := X;
     LastY := Y;
   end
-  else if WireFrameAPI = WF_OpenGL then
+  else if (WireFrameAPI = WF_OpenGL) and (Renderer is TOGLRenderer) then
   begin
-    // line starts at the real cleave origin (it may be a snapped vertex that
-    // is not on the grid plane, so don't re-derive it from its screen position)
     if not GetSnapPoint(X, Y, snapToVertex, snapToGrid, fx, fy, fz) then
       Exit;
-
-    glColor4f(1.0, 0.0, 0.0, 0.5);
-
-    // erase previous line
-    if not firstpass then
+    Renderer.ProjectPoint(fx, fy, fz, sx, sy);
+    with TOGLRenderer(Renderer) do
     begin
-      glBegin(GL_LINES);
-      glVertex3f(lx, ly, lz);
-      glVertex3f(last_x, last_y, last_z);
-      glEnd;
+      OverlayLineOn := True;
+      OverlayLX1 := CleaveOrgXY.X;
+      OverlayLY1 := CleaveOrgXY.Y;
+      OverlayLX2 := sx;
+      OverlayLY2 := sy;
     end;
-
-    // draw new line
-    glBegin(GL_LINES);
-    glVertex3f(lx, ly, lz);
-    glVertex3f(fx, fy, fz);
-    glEnd;
-
-    firstpass := False;
-    last_x := fx;
-    last_y := fy;
-    last_z := fz;
-    LastX := X;
-    LastY := Y;
+    TOGLRenderer(Renderer).OverlayLineGlow := not CleavePlainLine;
+    TOGLRenderer(Renderer).OverlayGlowOn := not CleavePlainLine;
+    TOGLRenderer(Renderer).OverlayGX := X;
+    TOGLRenderer(Renderer).OverlayGY := Y;
+    LastX := sx;
+    LastY := sy;
+    Redraw;
   end;
 end;
 
@@ -2477,6 +5103,8 @@ begin
     // Perform cleave
     CleaveBy(cnormal, CleaveOrg.x, CleaveOrg.y, CleaveOrg.z);
   finally
+    if (WireFrameAPI = WF_OpenGL) and (Renderer is TOGLRenderer) then
+      TOGLRenderer(Renderer).OverlayLineOn := False;
     RestoreGLRubberBandState;
     SetMouseMode(MM_SELECT);
     Invalidate;
@@ -2496,44 +5124,30 @@ begin
 end;
 
 Procedure TJedMain.DO_ProceedRectSelect(X,Y:integer);
-var
-   vp:TVector4i;
-
 begin
-
-if WireFrameAPI = WF_Software then
+ if WireFrameAPI = WF_Software then
   begin
    Canvas.Pen.Mode:=pmXor;
    Canvas.Pen.Color:=clRed;
    Canvas.Brush.Style:=bsClear;
    Canvas.Rectangle(RectOrgX,RectOrgY,RectLastX,RectLastY);
    Canvas.Rectangle(RectOrgX,RectOrgY,X,Y);
+  end;
 
+ {OpenGL: draw the box as an overlay in the normal back buffer instead of XOR-ing
+  into the front buffer (which is not visible on most modern drivers)}
+ if (WireFrameAPI = WF_OpenGL) and (Renderer is TOGLRenderer) then
+  begin
+   with TOGLRenderer(Renderer) do
+   begin
+    OverlayRectOn:=true;
+    OverlayX1:=RectOrgX;
+    OverlayY1:=RectOrgY;
+    OverlayX2:=X;
+    OverlayY2:=Y;
    end;
-
- if WireFrameAPI = WF_OpenGL then
-    begin
-        glDrawBuffer(GL_FRONT);
-        glDisable(GL_CULL_FACE);
-
-        glEnable(GL_COLOR_LOGIC_OP);
-        glLogicOp(GL_XOR);
-
-        glgetIntegerv(GL_VIEWPORT,@vp);
-
-        glPushMatrix();
-        glMatrixMode(GL_PROJECTION);
-
-        glLoadIdentity();
-        gluOrtho2D(0.0, vp[2], 0.0, vp[3]);
-
-        glMatrixMode(GL_MODELVIEW);
-        glLoadIdentity();
-        glColor4f(1.0, 0.0, 0.0, 0.5);
-        glRectd(RectOrgX,vp[3]-RectOrgY,RectLastX, vp[3]-RectLastY);
-        glRectd(RectOrgX,vp[3]-RectOrgY,x, vp[3]-y);
-
-    end;
+   Redraw;
+  end;
 
    RectLastX:=X;
    RectLastY:=Y;
@@ -2545,16 +5159,8 @@ var i,sf,vx,ed,fr:integer;
     allin:boolean;
 begin
 
-if WireFrameAPI = WF_OpenGL then
-    begin
-    glEnable(GL_CULL_FACE);
-    glPopMatrix();
-
-    glDisable(GL_COLOR_LOGIC_OP);
-
-    glDrawBuffer(GL_BACK);
-    SwapBuffers(canvas.Handle);
-    end;
+if (WireFrameAPI = WF_OpenGL) and (Renderer is TOGLRenderer) then
+    TOGLRenderer(Renderer).OverlayRectOn:=false;
     redraw;
 
  Renderer.BeginRectPick(RectOrgX,RectOrgY,X,Y);
@@ -2640,6 +5246,7 @@ var fx,fy,fz:double;
     th,fr:integer;
 begin
  if not Renderer.GetGridAt(X,Y,fx,fy,fz) then exit;
+ GeomDragStart;
   SetMouseMode(MM_DRAG);
   DragOrg.x:=fx;
   DragOrg.y:=fy;
@@ -2809,7 +5416,7 @@ begin
 
  case map_mode of
   MM_SC: TranslateSectors(level,scsel,Cur_SC,dx,dy,dz);
-  MM_SF: TranslateSurfaces(Level,sfsel,Cur_SC,Cur_SF,dx,dy,dz);
+  MM_SF: MoveSurfacesWithMirror(dx,dy,dz);
   MM_VX: TranslateVertices(level,vxsel,cur_SC,Cur_VX,dx,dy,dz);
   MM_ED: TranslateEdges(level,edsel,Cur_SC,Cur_SF,Cur_ED,dx,dy,dz);
   MM_TH: TranslateThings(level,thsel,Cur_TH,dx,dy,dz,MoveFrames);
@@ -2887,6 +5494,10 @@ begin
  OrgX:=Renderer.xv;
  OrgY:=Renderer.yv;
  OrgZ:=Renderer.zv;
+ CamStartX:=Renderer.CamX;
+ CamStartY:=Renderer.CamY;
+ CamStartZ:=Renderer.CamZ;
+ CamStartScale:=Renderer.scale;
 
  SetMouseMode(MM_RotateCam);
 end;
@@ -2894,9 +5505,28 @@ end;
 Procedure TJedMain.Do_RotateCam(X,Y:integer);
 var dx,dy:integer;
     nx,ny,nz:Tvector;
+    x1,y1,z1:TVector;
+    upp,g,b,cg,sg,cb,sb,aa,bb,dl,t,sgn:double;
 begin
  dx:=x-GOrgXY.X;
  dy:=y-GOrgXY.y;
+
+ {Blender style middle mouse: Shift = pan, Ctrl = zoom, plain = turntable orbit about the view center}
+ if CamDrag=1 then
+ begin
+  upp:=Renderer.scale/16;  {world units per pixel}
+  Renderer.CamX:=CamStartX+(dx*OrgX.dx-dy*OrgY.dx)*upp;
+  Renderer.CamY:=CamStartY+(dx*OrgX.dy-dy*OrgY.dy)*upp;
+  Renderer.CamZ:=CamStartZ+(dx*OrgX.dz-dy*OrgY.dz)*upp;
+  Invalidate;
+  exit;
+ end;
+ if CamDrag=2 then
+ begin
+  Renderer.scale:=CamStartScale*Exp(dy*0.01);
+  Invalidate;
+  exit;
+ end;
 
 if MapRot=MR_old then
 begin
@@ -2908,15 +5538,37 @@ begin
  end;
 end else
 begin
- nx:=OrgX;
- ny:=OrgY;
- nz:=OrgZ;
+ {turntable: left/right turns the view about the world Z (up) axis, up/down tilts it about the screen X axis.
+  The scene follows the mouse. Tilt is limited to straight down / straight up so the view never flips.}
+ sgn:=1;
+ if OrgY.dz<0 then sgn:=-1;
+ g:=-dx*0.4*sgn*Pi/180;
+ cg:=Cos(g); sg:=Sin(g);
+ x1.dx:=OrgX.dx*cg-OrgX.dy*sg; x1.dy:=OrgX.dx*sg+OrgX.dy*cg; x1.dz:=OrgX.dz;
+ y1.dx:=OrgY.dx*cg-OrgY.dy*sg; y1.dy:=OrgY.dx*sg+OrgY.dy*cg; y1.dz:=OrgY.dz;
+ z1.dx:=OrgZ.dx*cg-OrgZ.dy*sg; z1.dy:=OrgZ.dx*sg+OrgZ.dy*cg; z1.dz:=OrgZ.dz;
 
- RotAxisAngle(nx,ny,dx); {l/r}
- RotAxisAngle(ny,nz,dy); {u/d}
+ b:=-dy*0.4*Pi/180;
+ if y1.dz>=0 then
+ begin
+  aa:=y1.dz; bb:=z1.dz;
+  if aa*aa+bb*bb>1e-12 then
+  begin
+   dl:=ArcTan2(bb,aa);
+   t:=b-dl;
+   while t>Pi do t:=t-2*Pi;
+   while t<=-Pi do t:=t+2*Pi;
+   if t>Pi/2 then t:=Pi/2;
+   if t<-Pi/2 then t:=-Pi/2;
+   b:=dl+t;
+  end;
+ end;
+ cb:=Cos(b); sb:=Sin(b);
+ ny.dx:=y1.dx*cb+z1.dx*sb; ny.dy:=y1.dy*cb+z1.dy*sb; ny.dz:=y1.dz*cb+z1.dz*sb;
+ nz.dx:=z1.dx*cb-y1.dx*sb; nz.dy:=z1.dy*cb-y1.dy*sb; nz.dz:=z1.dz*cb-y1.dz*sb;
 
- With nz do Renderer.SetZ(dx,dy,dz);
- With nx do Renderer.SetX(dx,dy,dz);
+ Renderer.SetZ(nz.dx,nz.dy,nz.dz);
+ Renderer.SetX(x1.dx,x1.dy,x1.dz);
 
 end;
 
@@ -3080,13 +5732,33 @@ procedure TJedMain.FormMouseDown(Sender: TObject; Button: TMouseButton;
 var
     t:TJKThing;
 begin
+ToolDownX:=X;
+ToolDownY:=Y;
 case Mouse_mode of
     MM_Select:
-      if Button = TMouseButton.mbMiddle then
       begin
+       if Button = TMouseButton.mbMiddle then
+       begin
         if GetMousePos(X, Y) then
+        begin
           Do_StartRotateCam(X, Y);
+          if ssShift in Shift then CamDrag:=1
+          else if ssCtrl in Shift then CamDrag:=2
+          else CamDrag:=0;
+        end;
         exit
+       end;
+       {Move tool: select what is under the cursor first so dragging moves it}
+       if (ToolMove or ToolScale or ToolExtrude or ToolPlane or ToolInset or ToolBox or ToolBevel) and (Button = TMouseButton.mbLeft) and not (ssAlt in Shift) and not (ssCtrl in Shift) then
+       begin
+        GizAxis:=GizmoPick(X,Y);
+        if GizAxis>0 then begin GizDownX:=X; GizDownY:=Y; GizF:=0; Invalidate; exit; end;
+       end;
+       if ToolMove and (Button = TMouseButton.mbLeft) and not (ssAlt in Shift) and not (ssCtrl in Shift) then
+       begin
+        Do_SelectAt(X,Y,false);
+        if ssShift in Shift then DO_MultiSelect;
+       end;
       end;
  MM_Cleave: DO_StartCleave(X,Y,ssShift in Shift);
  MM_CreateSector: DO_StartCreateSC(X,Y,ssShift in Shift);
@@ -3097,15 +5769,36 @@ procedure TJedMain.FormMouseUp(Sender: TObject; Button: TMouseButton;
   Shift: TShiftState; X, Y: Integer);
 begin
  Case Mouse_mode of
-  MM_SELECT: begin
+  MM_SELECT: if GizAxis>0 then
+             begin
+              if ToolBox and (GizAxis=10) then Do_SelectAt(X,Y,ssAlt in Shift);
+              GizAxis:=0; Invalidate;
+             end else
+             if not (ToolMove and (Button = TMouseButton.mbLeft) and not (ssAlt in Shift) and not (ssCtrl in Shift)) then
+             begin
               Do_SelectAt(X,Y,ssAlt in Shift);
               if ssShift in Shift then DO_MultiSelect;
              end;
   MM_RotateCam:
       if Button = TMouseButton.mbMiddle then
+      begin
+        CamDrag:=0;
         SetMouseMode(MM_Select);
+      end;
   MM_CreateSector: DO_EndCreateSC(X,Y,ssShift in Shift);
-  MM_DRAG: DO_EndDrag(X,Y);
+  MM_DRAG: begin
+            if ToolExtrude and (GizAxis=5) then DoGizExtrude;
+            if ToolInset and (GizAxis=9) then DoGizInset;
+            if ToolBevel and (GizAxis=9) then DoGizBevel;
+            if ToolBox and (GizAxis=10) then DoGizBox;
+            if GeomArmed and (ToolMove or ToolScale) then
+            begin
+             GeomArmed:=false;
+             if ToolScale and not ToolMove then GeomGuard(GeomBefore,'Scale') else GeomGuard(GeomBefore,'Move');
+            end;
+            GizAxis:=0;
+            DO_EndDrag(X,Y);
+           end;
   MM_Cleave: DO_EndCleave(LastX,LastY,ssShift in Shift);
   MM_RectSelect: DO_EndRectSelect(X,Y);
  end;
@@ -3140,13 +5833,19 @@ var msX,msY:integer;
 begin
  Case Mouse_Mode of
   MM_SELECT: begin
-              if (ssLeft in shift) and (ssCtrl in shift) then
+              if (GizAxis>0) and (ssLeft in shift) then
+              begin
+               if (Abs(X-GizDownX)>3) or (Abs(Y-GizDownY)>3) then Do_StartGizmo(X,Y);
+              end else
+              if (ssLeft in shift) and ((ssCtrl in shift) or
+                 (ToolMove and not (ssAlt in shift) and ((Abs(X-ToolDownX)>3) or (Abs(Y-ToolDownY)>3)))) then
               DO_StartDrag(X,Y) else
              if (ssLeft in shift) and (ssAlt in shift) then
               Do_StartRectSelect(X,Y);
               snaptoy:=false;
              end;
-  MM_DRAG: Do_ProceedDrag(X,Y,ssShift in shift,ssAlt in shift,snaptoy);
+  MM_DRAG: if GizAxis>0 then Do_ProceedGizmo(X,Y)
+           else Do_ProceedDrag(X,Y,ssShift in shift,ssAlt in shift,snaptoy);
   MM_Cleave: Do_ProceedCleave(X,Y,ssShift in Shift);
   MM_CreateSector: DO_ProceedCreateSC(X,Y,ssShift in Shift);
   MM_TranslateGrid: Do_TranslateGrid(X,Y);
@@ -3246,21 +5945,31 @@ finally
 end;
 end;
 
+procedure TJedMain.ImportRecentClick(Sender: TObject);
+begin
+ if Not AskSave then exit;
+ DoImport((Sender as TMenuItem).hint);
+end;
+
 procedure TJedMain.Import1Click(Sender: TObject);
-var th:TJKThing;
-    I,nsec:integer;
-    scale:double;
-    s:string;
-    a3do:T3DO;
 begin
  if not AskSave then exit;
 
  With GetFileOpen do
  begin
   Filter:='All Importable files|*.lev;*.gob;*.asc;*.3do;*.obj|DF files(*.LEV;*.GOB)|*.LEV;*.GOB|3D Studio ASC|*.asc|JK 3DOs|*.3do;*.gob|Wavefront OBJ|*.obj';
- If Execute then
- begin
-  ResettingEditor;
+  If Execute then DoImport(FileName);
+ end;
+end;
+
+Procedure TJedMain.DoImport(const FileName:string);
+var th:TJKThing;
+    I,nsec:integer;
+    scale:double;
+    s:string;
+    a3do:T3DO;
+begin
+ResettingEditor;
 
   s:=LowerCase(ExtractFileExt(FileName));
  if s='.3do' then
@@ -3315,13 +6024,8 @@ begin
    end;
   end;
  end;
-
-
-end;
-
-
+ AddImportRecent(FileName);
  ToolBar.LoadLayers;
-end;
 end;
 
 procedure TJedMain.FormPaint(Sender: TObject);
@@ -3533,6 +6237,7 @@ begin
  BNTH.Down:=mm=MM_TH;
  BNFR.Down:=mm=MM_FR;
  BNLT.Down:=mm=MM_LT;
+ UpdateToolStrip;
  Invalidate;
 end;
 
@@ -4243,6 +6948,7 @@ begin
  else exit;
  end;
  mouse_mode:=mm;
+ UpdateToolStrip;
 end;
 
 Procedure TJedMain.EditObject;
@@ -4365,7 +7071,11 @@ begin
  case key of
   Ord('G'): SetMouseMode(MM_SELECT);
   Ord('R'): SetMouseMode(MM_SELECT);
-  VK_Space: SetMouseMode(MM_SELECT);
+  VK_Space: begin
+             CleaveSpaceDown:=false;
+             {Space also toggles the cleave line style; don't drop out of cleave mode}
+             if not CleaveStarted then SetMouseMode(MM_SELECT);
+            end;
  end;
 end;
 
@@ -4512,8 +7222,16 @@ end;
 procedure TJedMain.CancelMouseMode;
 begin
  case Mouse_mode of
-  MM_Cleave: begin RestoreGLRubberBandState; Invalidate; cleavestarted:=false; end;
-  MM_RectSelect: begin Invalidate; RectSelStarted:=false; end;
+  MM_Cleave: begin
+              if (WireFrameAPI = WF_OpenGL) and (Renderer is TOGLRenderer) then
+               TOGLRenderer(Renderer).OverlayLineOn:=false;
+              RestoreGLRubberBandState; Invalidate; cleavestarted:=false;
+             end;
+  MM_RectSelect: begin
+                  if (WireFrameAPI = WF_OpenGL) and (Renderer is TOGLRenderer) then
+                   TOGLRenderer(Renderer).OverlayRectOn:=false;
+                  Invalidate; RectSelStarted:=false;
+                 end;
  end;
  SetMouseMode(MM_SELECT);
 end;
@@ -5091,6 +7809,9 @@ var l:TList;
     nok:integer;
     sa:double;
     nrm:TVector;
+    nun,nvn:TVector;               {level surfaces: the current surface's own U/V directions}
+    levelPlanar:boolean;
+    tx0:TTXVertex;
     usgn:double;
     useFrame:boolean;              {3DO cylindrical: work in a frame whose Z is the limb axis}
     fox,foy,foz:double;
@@ -5499,6 +8220,48 @@ begin
 
   csurf:=Level.Sectors[Cur_SC].Surfaces[Cur_SF];
   if kind=sp_Planar then BasisFor(VisibleNormal(csurf),un,vn);
+  // On level geometry the texture is laid out upright, anchored on vertex 0 of the current surface (which keeps its
+  // UV): U runs to the right and V runs down, as seen through the 3D preview camera when it is available, otherwise
+  // as seen from the front of the surface with world Z (or map north on floors and ceilings) as up. The scale
+  // keeps its size but loses any negative sign, so nothing comes out mirrored.
+  levelPlanar:=false;
+  if (kind=sp_Planar) and not Is3DOSurf(csurf) then
+  begin
+   nrm:=csurf.normal;
+   if Normalize(nrm) then
+   begin
+    if SurfHasCamView then
+    begin
+     // camera right / up projected into the surface plane
+     d:=SurfCamRX*nrm.dx+SurfCamRY*nrm.dy+SurfCamRZ*nrm.dz;
+     SetVec(nun,SurfCamRX-d*nrm.dx,SurfCamRY-d*nrm.dy,SurfCamRZ-d*nrm.dz);
+     d:=SurfCamUX*nrm.dx+SurfCamUY*nrm.dy+SurfCamUZ*nrm.dz;
+     SetVec(nvn,-(SurfCamUX-d*nrm.dx),-(SurfCamUY-d*nrm.dy),-(SurfCamUZ-d*nrm.dz));
+     levelPlanar:=Normalize(nun) and Normalize(nvn);
+     if levelPlanar then
+     begin
+      // keep V square to U so an oblique view does not shear the texture
+      d:=nvn.dx*nun.dx+nvn.dy*nun.dy+nvn.dz*nun.dz;
+      SetVec(nvn,nvn.dx-d*nun.dx,nvn.dy-d*nun.dy,nvn.dz-d*nun.dz);
+      levelPlanar:=Normalize(nvn);
+     end;
+    end;
+    if not levelPlanar then
+    begin
+     if abs(nrm.dz)>0.995 then SetVec(ax,0,1,0) else SetVec(ax,0,0,1);
+     d:=ax.dx*nrm.dx+ax.dy*nrm.dy+ax.dz*nrm.dz;
+     SetVec(nvn,ax.dx-d*nrm.dx,ax.dy-d*nrm.dy,ax.dz-d*nrm.dz);
+     if Normalize(nvn) then
+     begin
+      // right = (-normal) x up, and V runs down
+      nun:=VCross(nrm,nvn);
+      SetVec(nun,-nun.dx,-nun.dy,-nun.dz);
+      SetVec(nvn,-nvn.dx,-nvn.dy,-nvn.dz);
+      levelPlanar:=Normalize(nun);
+     end;
+    end;
+   end;
+  end;
 
   for i:=0 to l.Count-1 do
   begin
@@ -5524,7 +8287,36 @@ begin
      begin
       // one shared plane, so the texture runs on across all the surfaces
       vx:=csurf.Vertices[0];
-      ArrangeTextureBy(surf,un,vn,vx.x,vx.y,vx.z,0,0);
+      if levelPlanar and not Is3DOSurf(surf) then
+      begin
+       tx0:=csurf.TXVertices[0];
+       // a surface that came from a 3DO model carries meaningless scales (something like 12.2 and -4.3): keep the
+       // size only when U and V agree, otherwise start from the normal scale of 1. Never negative, so no mirroring.
+       d:=Abs(csurf.uscale);
+       r:=Abs(csurf.vscale);
+       if (d<0.0001) or (r<0.0001) or (Abs(d-r)>0.01*(d+r)) then
+       begin
+        d:=1; r:=1;
+       end;
+       surf.uscale:=d;
+       surf.vscale:=r;
+       // ArrangeTextureBy reverses V on surfaces that have the flip flag; undo that so V really runs down
+       if (surf.SurfFlags and SFF_Flip)<>0 then SetVec(nrm,-nvn.dx,-nvn.dy,-nvn.dz)
+       else SetVec(nrm,nvn.dx,nvn.dy,nvn.dz);
+       ArrangeTextureBy(surf,nun,nrm,vx.x,vx.y,vx.z,tx0.u,tx0.v);
+      end else
+      begin
+      // the plane comes from the current surface, which may face the other way (or be a 3DO face): make sure the
+      // texture still reads the right way round on this surface, otherwise it comes out mirrored
+      nrm:=VCross(un,vn);
+      ax:=VisibleNormal(surf);
+      if nrm.dx*ax.dx+nrm.dy*ax.dy+nrm.dz*ax.dz>0 then
+      begin
+       SetVec(nrm,-un.dx,-un.dy,-un.dz);
+       ArrangeTextureBy(surf,nrm,vn,vx.x,vx.y,vx.z,0,0);
+      end else
+       ArrangeTextureBy(surf,un,vn,vx.x,vx.y,vx.z,0,0);
+      end;
      end;
     sp_Box:
      begin
@@ -5629,6 +8421,8 @@ begin
    end;
    SectorChanged(surf.sector);
   end;
+  // the UV editor keeps a view aligned to the old UVs: re-align it to the new mapping
+  if (UVEdit<>nil) and UVEdit.Visible then UVEdit.ReloadSurface;
  finally
   l.Free;
  end;
@@ -6535,14 +9329,14 @@ begin
 end;
 
 Procedure TJedMain.SyncRecents;
-var im:integer;
+var sub:TMenuItem;
 
 Procedure AddItem(const s:string);
 var mi:TMenuItem;
     dn,fn:string;
 begin
  if s='' then exit;
- mi:=TMenuItem.Create(FileMenu);
+ mi:=TMenuItem.Create(OpenRecentMenu);
  if length(s)>32 then
  begin
   dn:=ExtractPath(s);
@@ -6553,22 +9347,53 @@ begin
  else mi.Caption:=s;
  mi.hint:=s;
  mi.OnClick:=RecentClick;
- FileMenu.Add(mi);
+ OpenRecentMenu.Add(mi);
 end;
 
 begin
- im:=RecentBar.MenuIndex;
- While FileMenu.Count>im+1 do FileMenu.Delete(im+1);
+ EnsureRecents;
+ // Old flat list lived below the RecentBar separator; now it is an "Open Recent" submenu
+ RecentBar.Visible:=false;
+ if OpenRecentMenu=nil then
+ begin
+  OpenRecentMenu:=TMenuItem.Create(FileMenu);
+  OpenRecentMenu.Caption:='Open &Recent';
+  FileMenu.Insert(OpenMenu.MenuIndex+1,OpenRecentMenu);
+ end;
+ if OpenFolderMenu=nil then
+ begin
+  OpenFolderMenu:=TMenuItem.Create(FileMenu);
+  OpenFolderMenu.Caption:='Open Project &Folder';
+  OpenFolderMenu.OnClick:=OpenProjectFolderClick;
+  FileMenu.Insert(OpenRecentMenu.MenuIndex+1,OpenFolderMenu);
+ end;
+ While OpenRecentMenu.Count>0 do OpenRecentMenu.Delete(0);
  AddItem(Recent1);
  AddItem(Recent2);
  AddItem(Recent3);
  AddItem(Recent4);
+ OpenRecentMenu.Enabled:=OpenRecentMenu.Count>0;
+ SyncImportRecents;
+end;
+
+procedure TJedMain.OpenProjectFolderClick(Sender:TObject);
+var dir:string;
+begin
+ dir:=ProjectDir;
+ if (dir='') and (LevelFile<>'') then dir:=ExtractFilePath(LevelFile);
+ if (dir='') or (not DirectoryExists(dir)) then
+ begin
+  ShowMessage('There is no project folder yet. Open or save a level first.');
+  exit;
+ end;
+ ShellExecute(Handle,'open',PChar(ExcludeTrailingPathDelimiter(dir)),nil,nil,SW_SHOWNORMAL);
 end;
 
 Procedure TJedMain.AddRecent(const s:string);
 var sl:TStringList;
     i:integer;
 begin
+ EnsureRecents;
  sl:=TStringList.Create;
  sl.Add(Recent1);
  sl.Add(Recent2);
@@ -6584,9 +9409,259 @@ begin
  Recent3:=sl[2];
  Recent4:=sl[3];
 
+ WriteRecents;
+
  sl.Free;
 
  SyncRecents;
+end;
+
+Procedure TJedMain.BuildToolStrip;
+const Caps:array[0..9] of string=('Select','Move','Cleave','New Sector','Scale','Extrude','Plane Cut','Inset','Box Cut','Bevel');
+      Tips:array[0..9] of string=('Select: click to select (click this button again to deselect everything)','Move: drag the gizmo arrows to move the selection (hold Shift to ignore grid snapping)','Cleave sector (C)','Create sector (K)','Scale: drag the gizmo handles to scale the selection','Extrude: drag the arrow to extrude the surface','Plane Cut: move the cleave plane with the arrow, pick its axis, then press Cut now','Inset: drag the orange square on the surface towards its center','Box Cut: drag a rectangle on the selected surface to cut it out (doors, windows). Shift = ignore grid snapping','Bevel: drag the orange square on the surface to chamfer its edges (cuts a slanted face where the surface meets its neighbours)');
+const PCaps:array[1..4] of string=('X','Y','Z','G');
+var i:integer;
+begin
+ ToolPanel:=TPanel.Create(Self);
+ ToolPanel.Parent:=Self;
+ ToolPanel.Left:=4;
+ ToolPanel.Top:=Tbar.Height+6;
+ ToolPanel.Width:=84;
+ ToolPanel.BevelOuter:=bvRaised;
+ ToolPanel.Caption:='';
+
+ ToolTitle:=TLabel.Create(Self);
+ ToolTitle.Parent:=ToolPanel;
+ ToolTitle.Left:=8;
+ ToolTitle.Top:=5;
+ ToolTitle.Font.Style:=[fsBold];
+ ToolTitle.Caption:='Sector';
+
+ for i:=0 to 9 do
+ begin
+  ToolBtns[i]:=TSpeedButton.Create(Self);
+  ToolBtns[i].Parent:=ToolPanel;
+  ToolBtns[i].Left:=4;
+  ToolBtns[i].Top:=24+i*28;
+  ToolBtns[i].Width:=76;
+  ToolBtns[i].Height:=26;
+  ToolBtns[i].GroupIndex:=7;
+  ToolBtns[i].Flat:=true;
+  ToolBtns[i].Caption:=Caps[i];
+  ToolBtns[i].Hint:=Tips[i];
+  ToolBtns[i].ShowHint:=true;
+  ToolBtns[i].Tag:=i;
+  ToolBtns[i].OnClick:=ToolStripClick;
+ end;
+ ToolBtns[0].Down:=true;
+ ToolWeld:=TCheckBox.Create(Self);
+ ToolWeld.Parent:=ToolPanel;
+ ToolWeld.Left:=6;
+ ToolWeld.Width:=74;
+ ToolWeld.Caption:='Weld verts';
+ ToolWeld.Hint:='Surface mode: also move vertices of other sectors that touch the moved surface';
+ ToolWeld.ShowHint:=true;
+ ToolWeld.Checked:=true;
+ ToolWeld.Visible:=false;
+ PlaneAxis:=3;
+ for i:=1 to 4 do
+ begin
+  PlaneBtns[i]:=TSpeedButton.Create(Self);
+  PlaneBtns[i].Parent:=ToolPanel;
+  PlaneBtns[i].Left:=4+(i-1)*19;
+  PlaneBtns[i].Width:=19;
+  PlaneBtns[i].Height:=22;
+  PlaneBtns[i].GroupIndex:=8;
+  PlaneBtns[i].Flat:=true;
+  PlaneBtns[i].Caption:=PCaps[i];
+  PlaneBtns[i].Tag:=i;
+  PlaneBtns[i].ShowHint:=true;
+  PlaneBtns[i].Visible:=false;
+  PlaneBtns[i].OnClick:=PlaneAxisClick;
+ end;
+ PlaneBtns[1].Hint:='Plane perpendicular to the X axis';
+ PlaneBtns[2].Hint:='Plane perpendicular to the Y axis';
+ PlaneBtns[3].Hint:='Plane perpendicular to the Z axis (horizontal cut)';
+ PlaneBtns[4].Hint:='Plane parallel to the grid';
+ PlaneBtns[3].Down:=true;
+ PlaneRstBtn:=TSpeedButton.Create(Self);
+ PlaneRstBtn.Parent:=ToolPanel;
+ PlaneRstBtn.Left:=4;
+ PlaneRstBtn.Width:=76;
+ PlaneRstBtn.Height:=22;
+ PlaneRstBtn.Flat:=true;
+ PlaneRstBtn.Caption:='Reset tilt';
+ PlaneRstBtn.Hint:='Put the plane back to its axis. Drag the orange squares on the plane edge to tilt it (Ctrl = 15 degree steps)';
+ PlaneRstBtn.ShowHint:=true;
+ PlaneRstBtn.Visible:=false;
+ PlaneRstBtn.OnClick:=PlaneResetClick;
+ PlaneCutBtn:=TSpeedButton.Create(Self);
+ PlaneCutBtn.Parent:=ToolPanel;
+ PlaneCutBtn.Left:=4;
+ PlaneCutBtn.Width:=76;
+ PlaneCutBtn.Height:=26;
+ PlaneCutBtn.Flat:=true;
+ PlaneCutBtn.Caption:='Cut now';
+ PlaneCutBtn.Hint:='Cleave the selection with the plane';
+ PlaneCutBtn.ShowHint:=true;
+ PlaneCutBtn.Visible:=false;
+ PlaneCutBtn.OnClick:=PlaneCutClick;
+ ToolPanel.BringToFront;
+ UpdateToolStrip;
+end;
+
+Procedure TJedMain.UpdateToolStrip;
+const BtnOrder:array[0..9] of integer=(0,1,4,5,7,9,8,6,2,3);
+var idx,n,k,y:integer;
+    sc,sca,pl:boolean;
+begin
+ if ToolPanel=nil then exit;
+ case map_mode of
+  MM_SC: ToolTitle.Caption:='Sector';
+  MM_SF: ToolTitle.Caption:='Surface';
+  MM_VX: ToolTitle.Caption:='Vertex';
+  MM_ED: ToolTitle.Caption:='Edge';
+  MM_TH: ToolTitle.Caption:='Thing';
+  MM_LT: ToolTitle.Caption:='Light';
+  MM_FR: ToolTitle.Caption:='Frame';
+ else ToolTitle.Caption:='Tools';
+ end;
+ sc:=map_mode=MM_SC;
+ sca:=(map_mode=MM_SC) or (map_mode=MM_SF) or (map_mode=MM_TH) or (map_mode=MM_LT) or (map_mode=MM_FR);
+ if ToolScale and not sca then ToolScale:=false;
+ if ToolExtrude and (map_mode<>MM_SF) then ToolExtrude:=false;
+ if ToolInset and (map_mode<>MM_SF) then ToolInset:=false;
+ if ToolBox and (map_mode<>MM_SF) then ToolBox:=false;
+ if ToolBevel and (map_mode<>MM_SF) then ToolBevel:=false;
+ pl:=(map_mode=MM_SC) or (map_mode=MM_SF) or (map_mode=MM_ED);
+ if ToolPlane and not pl then ToolPlane:=false;
+ ToolBtns[2].Visible:=false;      {the Cleave button was replaced by Plane Cut (the C key still works)}
+ ToolBtns[7].Visible:=map_mode=MM_SF;
+ ToolBtns[8].Visible:=map_mode=MM_SF;
+ ToolBtns[9].Visible:=map_mode=MM_SF;
+ ToolBtns[3].Visible:=sc;
+ ToolBtns[4].Visible:=sca;
+ ToolBtns[5].Visible:=map_mode=MM_SF;
+ ToolBtns[6].Visible:=pl;
+ if sc and (mouse_mode=MM_Cleave) then idx:=2
+ else if sc and (mouse_mode=MM_CreateSector) then idx:=3
+ else if ToolBevel then idx:=9
+ else if ToolBox then idx:=8
+ else if ToolInset then idx:=7
+ else if ToolPlane then idx:=6
+ else if ToolExtrude then idx:=5
+ else if ToolScale then idx:=4
+ else if ToolMove then idx:=1
+ else idx:=0;
+ if mouse_mode in [MM_Select,MM_Cleave,MM_CreateSector] then ToolBtns[idx].Down:=true;
+ n:=0;
+ for k:=0 to 9 do
+  if ToolBtns[BtnOrder[k]].Visible then
+  begin
+   ToolBtns[BtnOrder[k]].Top:=24+n*28;
+   inc(n);
+  end;
+ y:=24+n*28+2;
+ ToolWeld.Visible:=(map_mode=MM_SF) and ToolMove;
+ ToolWeld.Top:=y;
+ if ToolWeld.Visible then inc(y,24);
+ for k:=1 to 4 do
+ begin
+  PlaneBtns[k].Visible:=ToolPlane;
+  PlaneBtns[k].Top:=y;
+ end;
+ if ToolPlane then inc(y,26);
+ PlaneRstBtn.Visible:=ToolPlane;
+ PlaneRstBtn.Top:=y;
+ if ToolPlane then inc(y,24);
+ PlaneCutBtn.Visible:=ToolPlane;
+ PlaneCutBtn.Top:=y;
+ if ToolPlane then inc(y,28);
+ ToolPanel.Height:=y+2;
+end;
+
+procedure TJedMain.ToolStripClick(Sender: TObject);
+var wasSelect:boolean;
+begin
+ wasSelect:=not (ToolMove or ToolScale or ToolExtrude or ToolPlane or ToolInset or ToolBox or ToolBevel) and (mouse_mode=MM_Select);
+ ToolInset:=false;
+ ToolBox:=false;
+ ToolBevel:=false;
+ if wasSelect and ((Sender as TSpeedButton).Tag=0) then ClearMultiSelection;
+ case (Sender as TSpeedButton).Tag of
+  0: begin ToolMove:=false; ToolScale:=false; ToolExtrude:=false; ToolPlane:=false; SetMouseMode(MM_SELECT); end;
+  1: begin ToolMove:=true; ToolScale:=false; ToolExtrude:=false; ToolPlane:=false; SetMouseMode(MM_SELECT); end;
+  4: begin ToolMove:=false; ToolScale:=true; ToolExtrude:=false; ToolPlane:=false; SetMouseMode(MM_SELECT); end;
+  5: begin ToolMove:=false; ToolScale:=false; ToolExtrude:=true; ToolPlane:=false; SetMouseMode(MM_SELECT); end;
+  6: begin ToolMove:=false; ToolScale:=false; ToolExtrude:=false; ToolPlane:=true; PlaneKey:=''; SetMouseMode(MM_SELECT); end;
+  7: begin ToolMove:=false; ToolScale:=false; ToolExtrude:=false; ToolPlane:=false; ToolInset:=true; SetMouseMode(MM_SELECT); end;
+  9: begin
+      ToolMove:=false; ToolScale:=false; ToolExtrude:=false; ToolPlane:=false; ToolBevel:=true; SetMouseMode(MM_SELECT);
+      PMsg.Caption:='Bevel: select a surface, then drag the orange square (Shift ignores grid snap)';
+     end;
+  8: begin
+      ToolMove:=false; ToolScale:=false; ToolExtrude:=false; ToolPlane:=false; ToolBox:=true; SetMouseMode(MM_SELECT);
+      PMsg.Caption:='Box Cut: select a surface, then drag a rectangle on it (Shift ignores grid snap)';
+     end;
+  2: begin
+      SetMouseMode(MM_CLEAVE);
+      PMsg.Caption:='Cleave Mode: hold CTRL to force snap to grid, shift to snap to vertex';
+     end;
+  3: SetMouseMode(MM_CreateSector);
+ end;
+ Invalidate;
+end;
+
+Procedure TJedMain.SyncImportRecents;
+var i:integer;
+    mi:TMenuItem;
+    s,dn,fn:string;
+begin
+ EnsureImportRecents;
+ if ImportRecentMenu=nil then
+ begin
+  ImportRecentMenu:=TMenuItem.Create(FileMenu);
+  ImportRecentMenu.Caption:='Import Recen&t';
+  FileMenu.Insert(Import1.MenuIndex+1,ImportRecentMenu);
+ end;
+ While ImportRecentMenu.Count>0 do ImportRecentMenu.Delete(0);
+ for i:=1 to 4 do
+ begin
+  s:=ImportRecents[i];
+  if s='' then continue;
+  mi:=TMenuItem.Create(ImportRecentMenu);
+  if length(s)>32 then
+  begin
+   dn:=ExtractPath(s);
+   fn:=ExtractName(s);
+   dn:=copy(dn,1,28-length(fn));
+   mi.caption:=dn+'...'+'\'+fn;
+  end
+  else mi.Caption:=s;
+  mi.hint:=s;
+  mi.OnClick:=ImportRecentClick;
+  ImportRecentMenu.Add(mi);
+ end;
+ ImportRecentMenu.Enabled:=ImportRecentMenu.Count>0;
+end;
+
+Procedure TJedMain.AddImportRecent(const s:string);
+var sl:TStringList;
+    i:integer;
+begin
+ EnsureImportRecents;
+ sl:=TStringList.Create;
+ try
+  for i:=1 to 4 do sl.Add(ImportRecents[i]);
+  i:=sl.IndexOf(s);
+  if i<>-1 then sl.Delete(i);
+  sl.Insert(0,s);
+  for i:=1 to 4 do ImportRecents[i]:=sl[i-1];
+ finally
+  sl.Free;
+ end;
+ WriteImportRecents;
+ SyncImportRecents;
 end;
 
 procedure TJedMain.SaveJKLGob1Click(Sender: TObject);
@@ -7937,6 +11012,7 @@ end;
 procedure TJedMain.miUndoClick(Sender: TObject);
 begin
  ApplyUndo;
+ VerifySelection;
  VerifyMultiselection;
  UpdateItemEditor;
 end;
@@ -8351,8 +11427,24 @@ begin
 end;
 
 procedure TJedMain.ExportSectorsasOBJ1Click(Sender: TObject);
+var sel:TArray<Integer>;
+    i:integer;
+
+Procedure AddSel(n:integer);
+var k:integer;
 begin
-ObjExport.ShowModal
+ if (n<0) or (n>=Level.Sectors.Count) then exit;
+ for k:=0 to High(sel) do if sel[k]=n then exit;
+ SetLength(sel,Length(sel)+1);
+ sel[High(sel)]:=n;
+end;
+
+begin
+ SetLength(sel,0);
+ for i:=0 to scsel.Count-1 do AddSel(scsel.GetSC(i));
+ AddSel(Cur_SC);
+ ObjExport.SetSelection(sel);
+ ObjExport.ShowModal;
 end;
 
 procedure TJedMain.TutorialsonMassassiNet1Click(Sender: TObject);

@@ -54,6 +54,15 @@ TOGLRenderer=class(TRenderer)
  OGR,OGB,OGG:integer;
  FPngImage: TBitmap;
  FTexture: GLuint;
+ {Screen-space selection rectangle drawn on top of the scene in EndScene}
+ OverlayRectOn:boolean;
+ OverlayX1,OverlayY1,OverlayX2,OverlayY2:integer;
+ {Glowing 'light saber' line (cleave) in screen pixels}
+ OverlayLineOn:boolean;
+ OverlayLX1,OverlayLY1,OverlayLX2,OverlayLY2:integer;
+ OverlayLineGlow:boolean;   {true: glowing blade, false: plain thin line}
+ OverlayGlowOn:boolean;     {glow around the mouse pointer}
+ OverlayGX,OverlayGY:integer;
 
  Procedure Initialize;override;
  Procedure BeginScene;override;
@@ -95,6 +104,8 @@ Private
  PBMv,PBPm:TGLMatrixd4;
  Procedure SetCamera;
  Procedure LoadPNG;
+ Procedure DrawOverlayRect;
+ Procedure DrawOverlayLine;
  Procedure SetRenderMatrix;
  Procedure SetPickMatrix(x,y:integer);
  Procedure RenderPoly(p:TPolygon);
@@ -218,9 +229,170 @@ begin
  R_Style:=rstyle;
 end;}
 
+Procedure TOGLRenderer.DrawOverlayRect;
+var vp:TVector4i;
+begin
+ glGetIntegerv(GL_VIEWPORT,@vp);
+ glPushAttrib(GL_ENABLE_BIT or GL_CURRENT_BIT or GL_LINE_BIT or GL_POLYGON_BIT or GL_COLOR_BUFFER_BIT);
+ glMatrixMode(GL_PROJECTION);
+ glPushMatrix;
+ glLoadIdentity;
+ glOrtho(0,vp[2],vp[3],0,-1,1);   {pixel coordinates, y down}
+ glMatrixMode(GL_MODELVIEW);
+ glPushMatrix;
+ glLoadIdentity;
+ glDisable(GL_DEPTH_TEST);
+ glDisable(GL_TEXTURE_2D);
+ glDisable(GL_LIGHTING);
+ glDisable(GL_CULL_FACE);
+ glEnable(GL_BLEND);
+ glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
+ glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
+ glColor4f(1.0,0.2,0.2,0.15);
+ glBegin(GL_QUADS);
+  glVertex2i(OverlayX1,OverlayY1);
+  glVertex2i(OverlayX2,OverlayY1);
+  glVertex2i(OverlayX2,OverlayY2);
+  glVertex2i(OverlayX1,OverlayY2);
+ glEnd;
+ glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
+ glLineWidth(1);
+ glColor4f(1.0,0.2,0.2,1.0);
+ glBegin(GL_LINE_LOOP);
+  glVertex2i(OverlayX1,OverlayY1);
+  glVertex2i(OverlayX2,OverlayY1);
+  glVertex2i(OverlayX2,OverlayY2);
+  glVertex2i(OverlayX1,OverlayY2);
+ glEnd;
+ glPopMatrix;
+ glMatrixMode(GL_PROJECTION);
+ glPopMatrix;
+ glMatrixMode(GL_MODELVIEW);
+ glPopAttrib;
+end;
+
+Procedure TOGLRenderer.DrawOverlayLine;
+var vp:TVector4i;
+    x1,y1,x2,y2,dx,dy,len,nx,ny:double;
+
+ {Soft beam: alpha a on the centre line fading to 0 at +-hw, with round glowing ends}
+ Procedure Beam(hw:double;r,g,b,a:single);
+ var i:integer;
+     ang:double;
+     procedure Rim(px,py:double);
+     begin
+      glColor4f(r,g,b,0);
+      glVertex2d(px,py);
+     end;
+ begin
+  glBegin(GL_QUADS);
+   glColor4f(r,g,b,0); glVertex2d(x1+nx*hw,y1+ny*hw);
+   glColor4f(r,g,b,0); glVertex2d(x2+nx*hw,y2+ny*hw);
+   glColor4f(r,g,b,a); glVertex2d(x2,y2);
+   glColor4f(r,g,b,a); glVertex2d(x1,y1);
+
+   glColor4f(r,g,b,a); glVertex2d(x1,y1);
+   glColor4f(r,g,b,a); glVertex2d(x2,y2);
+   glColor4f(r,g,b,0); glVertex2d(x2-nx*hw,y2-ny*hw);
+   glColor4f(r,g,b,0); glVertex2d(x1-nx*hw,y1-ny*hw);
+  glEnd;
+  {round ends}
+  glBegin(GL_TRIANGLE_FAN);
+   glColor4f(r,g,b,a); glVertex2d(x1,y1);
+   for i:=0 to 24 do
+   begin
+    ang:=i*2*Pi/24;
+    Rim(x1+Cos(ang)*hw,y1+Sin(ang)*hw);
+   end;
+  glEnd;
+  glBegin(GL_TRIANGLE_FAN);
+   glColor4f(r,g,b,a); glVertex2d(x2,y2);
+   for i:=0 to 24 do
+   begin
+    ang:=i*2*Pi/24;
+    Rim(x2+Cos(ang)*hw,y2+Sin(ang)*hw);
+   end;
+  glEnd;
+ end;
+
+ {Soft round glow around a point}
+ Procedure Blob(cx,cy,rad:double;r,g,b,a:single);
+ var i:integer;
+     ang:double;
+ begin
+  glBegin(GL_TRIANGLE_FAN);
+   glColor4f(r,g,b,a); glVertex2d(cx,cy);
+   for i:=0 to 32 do
+   begin
+    ang:=i*2*Pi/32;
+    glColor4f(r,g,b,0);
+    glVertex2d(cx+Cos(ang)*rad,cy+Sin(ang)*rad);
+   end;
+  glEnd;
+ end;
+
+begin
+ x1:=OverlayLX1; y1:=OverlayLY1;
+ x2:=OverlayLX2; y2:=OverlayLY2;
+ dx:=x2-x1; dy:=y2-y1;
+ len:=Sqrt(dx*dx+dy*dy);
+ if len<1 then exit;
+ nx:=-dy/len; ny:=dx/len;
+
+ glGetIntegerv(GL_VIEWPORT,@vp);
+ glPushAttrib(GL_ENABLE_BIT or GL_CURRENT_BIT or GL_LINE_BIT or GL_POLYGON_BIT or GL_COLOR_BUFFER_BIT);
+ glMatrixMode(GL_PROJECTION);
+ glPushMatrix;
+ glLoadIdentity;
+ glOrtho(0,vp[2],vp[3],0,-1,1);
+ glMatrixMode(GL_MODELVIEW);
+ glPushMatrix;
+ glLoadIdentity;
+ glDisable(GL_DEPTH_TEST);
+ glDisable(GL_TEXTURE_2D);
+ glDisable(GL_LIGHTING);
+ glDisable(GL_CULL_FACE);
+ glPolygonMode(GL_FRONT_AND_BACK,GL_FILL);
+ glEnable(GL_BLEND);
+ if OverlayLineGlow then
+ begin
+  glBlendFunc(GL_SRC_ALPHA,GL_ONE);   {additive: layers add up to a bright glow}
+  Beam(18,1.0,0.05,0.02,0.45);   {outer halo}
+  Beam(9, 1.0,0.20,0.12,0.65);   {inner glow}
+  Beam(3.5,1.0,0.75,0.70,1.0);   {hot edge}
+  Beam(1.6,1.0,1.0,1.0,1.0);     {white core}
+  if OverlayGlowOn then          {glow around the mouse pointer}
+  begin
+   Blob(OverlayGX,OverlayGY,30,1.0,0.10,0.05,0.55);
+   Blob(OverlayGX,OverlayGY,14,1.0,0.35,0.25,0.75);
+   Blob(OverlayGX,OverlayGY,5,1.0,1.0,1.0,1.0);
+  end;
+ end
+ else
+ begin
+  {plain thin line, for alignment}
+  glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
+  glEnable(GL_LINE_SMOOTH);
+  glLineWidth(1.5);
+  glColor4f(1.0,0.25,0.25,1.0);
+  glBegin(GL_LINES);
+   glVertex2d(x1,y1);
+   glVertex2d(x2,y2);
+  glEnd;
+ end;
+
+ glPopMatrix;
+ glMatrixMode(GL_PROJECTION);
+ glPopMatrix;
+ glMatrixMode(GL_MODELVIEW);
+ glPopAttrib;
+end;
+
 Procedure TOGLRenderer.EndScene;
 var oldpen,pen:Hpen;
 begin
+ if OverlayRectOn then DrawOverlayRect;
+ if OverlayLineOn then DrawOverlayLine;
  glFlush;
  SwapBuffers(hdc);
  if crad<>0 then
@@ -538,6 +710,15 @@ glEnable(GL_CULL_FACE);
    glFlush;
 
    inherited    DrawGrid;
+
+   {Drawing the grid lines leaves GL in wireframe/no-cull state (RenderLine does it).}
+   {Everything drawn after relies on that, so set it when the grid is hidden too.}
+   if HideGrid then
+   begin
+    glDisable(GL_CULL_FACE);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    With clGridY do SetColor(cl_Front,r,g,b);
+   end;
 end;
 
 Procedure TOGLRenderer.DrawVertices(vxs:TVertices);

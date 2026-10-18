@@ -267,23 +267,31 @@ end;
 Procedure TOGLPRenderer.DrawSurf(surf:T3DPSurf);
 var j:integer;
     vxd:TVXdets;
-    cutout:boolean;
+    cutout,solid,untex:boolean;
     a:byte;
 begin
- cutout:=(surf.tx<>nil) and (surf.tx.AlphaMode=1);
+ // geo mode 3 (or the preview's force geo mode 3 option): the mat's colour instead of its texture
+ solid:=((surf.geo=3) or PreviewForceGeo3) and (surf.tx<>nil);
+ // preview option: no textures, just the lighting
+ untex:=PreviewUntextured and (not solid);
+ cutout:=(surf.tx<>nil) and (surf.tx.AlphaMode=1) and (not solid) and (not untex);
  if surf.translucent then a:=128 else a:=255;   // face flag translucent: ~50% blend
  if cutout then
  begin
   glEnable(GL_ALPHA_TEST);
   glAlphaFunc(GL_GREATER,0.5);
  end;
- TOGLtexture(surf.tx).SetCurrent;
+ if solid or untex then glBindTexture(GL_TEXTURE_2D,0)
+ else TOGLtexture(surf.tx).SetCurrent;
  glBegin(GL_POLYGON);
  for j:=0 to surf.vxds.count-1 do
  begin
   vxd:=surf.getVXD(j);
-  glColor4ub(vxd.r,vxd.g,vxd.b,a);
-  if surf.tx<>nil then glTexCoord2f(vxd.u,vxd.v);
+  if solid then
+   // same vertex lighting as a textured surface: light * solid colour (what the texture modulate does)
+   glColor4ub((vxd.r*surf.tx.SolidR) div 255,(vxd.g*surf.tx.SolidG) div 255,(vxd.b*surf.tx.SolidB) div 255,a)
+  else glColor4ub(vxd.r,vxd.g,vxd.b,a);
+  if (surf.tx<>nil) and (not solid) and (not untex) then glTexCoord2f(vxd.u,vxd.v);
   glVertex3f(vxd.x,vxd.y,vxd.z);
  end;
  glEnd;
@@ -378,18 +386,20 @@ var i,j:integer;
     vxd:TVXdets;
     vx:TJKVertex;
  s:integer;
+    plain:boolean;
 begin
  if m=nil then exit;
  for i:=0 to m.surfs.count-1 do
  begin
   surf:=m.GetSurf(i);
-  if surf.translucent or ((surf.tx<>nil) and (surf.tx.AlphaMode=2)) then
+  plain:=(surf.geo=3) or PreviewForceGeo3 or PreviewUntextured;   // drawn without the texture: no alpha, no glow
+  if surf.translucent or ((surf.tx<>nil) and (surf.tx.AlphaMode=2) and (not plain)) then
   begin
    if AlphaList=nil then AlphaList:=TList.Create;
    AlphaList.Add(surf);        // drawn by DrawAlphaSurfs after everything else
   end
   else DrawSurf(surf);
-  if PreviewGlow and (surf.tx<>nil) and (surf.tx.GlowMode<>0) and (TOGLTexture(surf.tx).EmissIdx<>0) then
+  if PreviewGlow and (not plain) and (surf.tx<>nil) and (surf.tx.GlowMode<>0) and (TOGLTexture(surf.tx).EmissIdx<>0) then
   begin
    if GlowList=nil then GlowList:=TList.Create;
    GlowList.Add(surf);         // glow is added by DrawGlowSurfs
@@ -731,6 +741,14 @@ end;
 
  f:=OpenGameFile(mat);
  mf:=TMat.Create(f,0);
+
+ // geo mode 3 (solid colour): palette index from the mat, looked up in the same lit palette as the texels
+ With Pal[mf.GetSolidIndex] do
+ begin
+  SolidR:=r;
+  SolidG:=g;
+  SolidB:=b;
+ end;
 
  //usepalette:=(mf.info.storedas<>bylines16) and (@pPalProc<>nil);
  usepalette:=false;   //doesnt work with nvidia

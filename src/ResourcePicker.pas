@@ -61,6 +61,8 @@ type
 
     Cur_CMP:string;
     loadcmp:boolean;
+    CBRemember:TCheckBox; {created in code: remember folder and mask while NJED is open}
+    MemApplied:boolean; {group/mask restored from last use this session}
     oldOnClick:TNotifyEvent;
     
     Procedure AddGobGroup(const gob,dir:String;perm:Boolean);
@@ -133,6 +135,18 @@ uses Files, FileOperations, U_3doprev;
 
 {$R *.DFM}
 
+var
+ GroupMem,MaskMem:TStringList; {remembered group and mask per picker, only while the editor is running}
+
+Function MemKey(tv:TTreeView):string;
+var i:integer;
+begin
+ Result:='';
+ for i:=0 to tv.Items.Count-1 do
+  if tv.Items[i].Level=0 then Result:=Result+tv.Items[i].Text+'|';
+ Result:=StringReplace(Result,'=','_',[rfReplaceAll]);
+end;
+
 Procedure TResPicker.SetResName(const s:string);
 var p:TNotifyEvent;
 begin
@@ -150,7 +164,7 @@ begin
 
  if Assigned(EBResName.OnChange) then EBResName.OnChange(EBResName);
 
- if ResList.ItemIndex<0 then
+ if (ResList.ItemIndex<0) and not MemApplied then
  begin
   for i:=0 to TVGroups.Items.Count-1 do
   With TVGroups.Items[i] do
@@ -198,12 +212,26 @@ Procedure TResPicker.ResetGroups(const curnode:String);
 var Node:TTreeNode;
     i:Integer;
     ni:TNotifyEvent;
+    cn,mk,key:string;
 begin
+ cn:=curnode;
+ mk:='';
+ MemApplied:=false;
+ if (cn='') and (GroupMem<>nil) and (CBRemember<>nil) and CBRemember.Checked then
+ begin
+  key:=MemKey(TVGroups);
+  if GroupMem.IndexOfName(key)<>-1 then
+  begin
+   cn:=GroupMem.Values[key];
+   mk:=MaskMem.Values[key];
+   MemApplied:=true;
+  end;
+ end;
  Node:=TVGroups.Items.GetFirstNode;
  for i:=0 to TVGroups.Items.Count-1 do
  With TVGroups.Items[i] do
  begin
-  if Text=CurNode then
+  if Text=cn then
   begin
    Node:=TVGroups.Items[i];
    break;
@@ -211,7 +239,7 @@ begin
  end;
  ni:=EBMask.OnChange;
  EBMask.OnChange:=nil;
- EBMask.text:='';
+ EBMask.text:=mk;
  EBMask.OnChange:=ni;
  if node=nil then node:=TVGroups.Items.GetFirstNode;
  TVGroups.Selected:=Node;
@@ -910,7 +938,19 @@ begin
 end;
 
 procedure TResPicker.FormHide(Sender: TObject);
+var key:string;
 begin
+ if (TVGroups.Selected<>nil) and (CBRemember<>nil) and CBRemember.Checked then
+ begin
+  if GroupMem=nil then
+  begin
+   GroupMem:=TStringList.Create;
+   MaskMem:=TStringList.Create;
+  end;
+  key:=MemKey(TVGroups);
+  GroupMem.Values[key]:=TVGroups.Selected.Text;
+  MaskMem.Values[key]:=EBMask.Text;
+ end;
  if PV<>nil then
  begin
   Pv.Terminate;
@@ -940,6 +980,18 @@ begin
  ClientHeight:=BNOK.Top+BNOK.height+TVGroups.Top;
  ClientWidth:=ResList.Left+ResList.Width+TVGroups.Left;
  StdPreview:=true;
+
+ CBRemember:=TCheckBox.Create(Self);
+ With CBRemember do
+ begin
+  Parent:=Self;
+  Caption:='Remember folder && mask';
+  Checked:=false;
+  Left:=BTN_matThumb.Left+BTN_matThumb.Width+10;
+  Width:=160;
+  Top:=BTN_matThumb.Top+(BTN_matThumb.Height-Height) div 2;
+  Anchors:=[akLeft,akBottom];
+ end;
 end;
 
 (*Function TResPicker.PickCHK(const CurCHK:string):string;
@@ -1227,5 +1279,10 @@ procedure TResPicker.FormDestroy(Sender: TObject);
 begin
  ClearGroups;
 end;
+
+initialization
+finalization
+ GroupMem.Free;
+ MaskMem.Free;
 
 end.

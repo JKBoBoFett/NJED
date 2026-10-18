@@ -96,6 +96,7 @@ TMAT=class(TImageSource)
  Procedure LoadBits(var buf);
  Function GetPix16:TPix16;override;   // ARGB4444 / ARGB1555 / RGBA4444 / RGBA5551 / 565 (see MatPixels)
  Function GetTransIndex:Integer;override;   // 8 bit transparent mats
+ Function GetSolidIndex:Integer;   // texture mats: CMP palette index used by geo mode 3 (solid colour)
  Function IsEmissive16:Boolean;override;   // 16 bit, flag 2: alpha is a glow mask
 end;
 
@@ -471,6 +472,11 @@ begin
   if nCell>=mh.NumOfTextures then nCurCell:=mh.NumOfTextures-1
   else nCurCell:=nCell;
 
+  // texture header of the current cell (th.colornum = geo mode 3 solid colour)
+  f.FSeek(sizeof(mh)+nCurCell*sizeof(th));
+  f.Fread(th,sizeof(th));
+  f.FSeek(sizeof(mh)+mh.NumOfTextures*sizeof(th));
+
   for i:=0 to nCurCell do
   begin
    f.Fread(td,sizeof(td));
@@ -537,6 +543,16 @@ begin
  if iscolor or (mh.numBits<>8) then exit;
  if (td.Pad[0] and 1)=0 then exit;   // the game only tests bit 0
  Result:=td.Pad[2];
+ if (Result<0) or (Result>255) then Result:=0;
+end;
+
+// geo mode 3 (solid colour): the game draws the surface with the palette index stored in
+// the texture header, right after the texture type (th.colornum), 8 and 16 bit mats alike.
+// Colour mats store the same index in their colour header (ColorNum).
+Function TMAT.GetSolidIndex:Integer;
+begin
+ if iscolor then Result:=colornum
+ else Result:=th.colornum;
  if (Result<0) or (Result>255) then Result:=0;
 end;
 

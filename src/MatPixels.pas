@@ -41,6 +41,8 @@ const
 
 var
   PreviewGlow: Boolean = True;   { set False to switch the 3D glow pass off }
+  PreviewUntextured: Boolean = False;   { 3D preview menu: draw surfaces without their textures (lit, flat) }
+  PreviewForceGeo3: Boolean = False;    { 3D preview menu: draw every surface as geo mode 3 (the mat's solid colour) }
 
 implementation
 

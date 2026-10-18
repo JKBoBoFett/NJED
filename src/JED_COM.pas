@@ -56,7 +56,7 @@ TJEDCOM=class(IJED)
   Procedure SetCurFR(th,fr:integer);override;
 
   Procedure NewLevel(mots:boolean);override;
-  Procedure LoadLevel(name:pchar);override;
+  Procedure LoadLevel(name:PAnsiChar);override;
 
   {Different level editing functions}
 
@@ -98,7 +98,7 @@ TJEDCOM=class(IJED)
   Function UnAdjoin(sc,sf:integer):Boolean;override;
   Function CreateCubicSector(x,y,z:double;const pnormal,edge:TJEDVector):integer;override;
 
-  Procedure StartUndo(name:pchar);override;
+  Procedure StartUndo(name:PAnsiChar);override;
   Procedure SaveUndoForThing(n:integer;change:integer);override;
   Procedure SaveUndoForLight(n:integer;change:integer);override;
   Procedure SaveUndoForSector(n:integer;change:integer;whatpart:integer);override;
@@ -136,31 +136,31 @@ TJEDCOM=class(IJED)
   Function FindSelectedFR(th,fr:integer):integer;override;
   Function FindSelectedLT(lt:integer):integer;override;
 
-  Procedure SaveJED(name:pchar);override;
-  Procedure SaveJKL(name:pchar);override;
+  Procedure SaveJED(name:PAnsiChar);override;
+  Procedure SaveJKL(name:PAnsiChar);override;
   Procedure UpdateMap;override;
-  Procedure SetPickerCMP(cmp:pchar);override;
-  Function PickResource(what:integer;cur:pchar):pchar;override;
+  Procedure SetPickerCMP(cmp:PAnsiChar);override;
+  Function PickResource(what:integer;cur:PAnsiChar):PAnsiChar;override;
   Function EditFlags(what:integer;flags:LongInt):LongInt;override;
 
   Procedure ReloadTemplates;override;
-  Procedure PanMessage(mtype:integer;msg:pchar);override;
+  Procedure PanMessage(mtype:integer;msg:PAnsiChar);override;
   Procedure SendKey(shift:integer;key:integer);override;
-  Function ExecuteMenu(itemref:pchar):boolean;override;
-  Function GetJEDSetting(name:pchar):variant;override;
+  Function ExecuteMenu(itemref:PAnsiChar):boolean;override;
+  Function GetJEDSetting(name:PAnsiChar):variant;override;
   Function IsLayerVisible(n:integer):boolean;override;
 
   procedure CheckConsistencyErrors;override;
   procedure CheckResources;override;
   Function NConsistencyErrors:integer;override;
-  Function GetConsErrorString(n:integer):pchar;override;
+  Function GetConsErrorString(n:integer):PAnsiChar;override;
   Function GetConsErrorType(n:integer):integer;override;
   Function GetConsErrorSector(n:integer):integer;override;
   Function GetConsErrorSurface(n:integer):integer;override;
   Function GetConsErrorThing(n:integer):integer;override;
   Function GetConsErrorCog(n:integer):integer;override;
   Function IsPreviewActive:boolean;override;
-  Function GetJEDString(what:integer):pchar;override;
+  Function GetJEDString(what:integer):PAnsiChar;override;
 {  Function GetProjectDir:String;
   Function GetJEDDir:String;
   Function GetLevelFile:String;, gobs, cddir, regbase, LEClogo, JKDIr, MotsDir,
@@ -171,37 +171,37 @@ TJEDCOM=class(IJED)
   {0.93}
   Function GetJedWindow(whichone:integer):integer;override;
 
-  Function FileExtractExt(path:pchar):pchar;override;
-  Function FileExtractPath(path:pchar):pchar;override;
-  Function FileExtractName(path:pchar):pchar;override;
-  Function FindProjectDirFile(name:pchar):pchar;override;
-  Function IsFileContainer(path:pchar):boolean;override;
-  Function IsFileInContainer(path:pchar):Boolean;override;
+  Function FileExtractExt(path:PAnsiChar):PAnsiChar;override;
+  Function FileExtractPath(path:PAnsiChar):PAnsiChar;override;
+  Function FileExtractName(path:PAnsiChar):PAnsiChar;override;
+  Function FindProjectDirFile(name:PAnsiChar):PAnsiChar;override;
+  Function IsFileContainer(path:PAnsiChar):boolean;override;
+  Function IsFileInContainer(path:PAnsiChar):Boolean;override;
 
-  Function FileOpenDialog(fname:pchar;filter:pchar):pchar;override;
+  Function FileOpenDialog(fname:PAnsiChar;filter:PAnsiChar):PAnsiChar;override;
 
 
-  Function OpenFile(name:pchar):integer;override;
-  Function OpenGameFile(name:pchar):integer;override;
+  Function OpenFile(name:PAnsiChar):integer;override;
+  Function OpenGameFile(name:PAnsiChar):integer;override;
   Function ReadFile(handle:integer;buf:pointer;size:longint):integer;override;
   Procedure SetFilePos(handle:integer;pos:longint);override;
   Function GetFilePos(handle:integer):longint;override;
   Function GetFileSize(handle:integer):longint;override;
-  Function GetFileName(handle:integer):pchar;override;
+  Function GetFileName(handle:integer):PAnsiChar;override;
   Procedure CloseFile(handle:integer);override;
 
-  Function OpenTextFile(name:pchar):integer;override;
-  Function OpenGameTextFile(name:pchar):integer;override;
-  Function GetTextFileName(handle:integer):pchar;override;
-  Function ReadTextFileString(handle:integer):pchar;override;
+  Function OpenTextFile(name:PAnsiChar):integer;override;
+  Function OpenGameTextFile(name:PAnsiChar):integer;override;
+  Function GetTextFileName(handle:integer):PAnsiChar;override;
+  Function ReadTextFileString(handle:integer):PAnsiChar;override;
   Function TextFileEof(handle:integer):boolean;override;
   Function TextFileCurrentLine(handle:integer):integer;override;
   Procedure CloseTextFile(handle:integer);override;
 
-  Function OpenGOB(name:pchar):integer;override;
+  Function OpenGOB(name:PAnsiChar):integer;override;
   Function GOBNFiles(handle:integer):integer;override;
-  Function GOBNFileName(handle:integer;n:integer):pchar;override;
-  Function GOBNFullFileName(handle:integer;n:integer):pchar;override;
+  Function GOBNFileName(handle:integer;n:integer):PAnsiChar;override;
+  Function GOBNFullFileName(handle:integer;n:integer):PAnsiChar;override;
   Function GOBGetFileSize(handle:integer;n:integer):longint;override;
   Function GOBGetFileOffset(handle:integer;n:integer):longint;override;
   Procedure CloseGOB(handle:integer);override;
@@ -275,39 +275,39 @@ end;
 
   {Layers}
   Function NLayers:integer;override;
-  Function GetLayerName(n:integer):pchar;override;
-  Function AddLayer(name:Pchar):integer;override;
+  Function GetLayerName(n:integer):PAnsiChar;override;
+  Function AddLayer(name:PAnsiChar):integer;override;
 
   {0.92}
 
   Function NTHingValues(th:integer):integer;override;
-  Function GetThingValueName(th,n:Integer):pchar;override;
-  Function GetThingValueData(th,n:integer):pchar;override;
-  Procedure SetThingValueData(th,n:Integer;val:pchar);override;
+  Function GetThingValueName(th,n:Integer):PAnsiChar;override;
+  Function GetThingValueData(th,n:integer):PAnsiChar;override;
+  Procedure SetThingValueData(th,n:Integer;val:PAnsiChar);override;
 
   Procedure GetThingFrame(th,n:Integer;var x,y,z,pch,yaw,rol:double);override;
   Procedure SetThingFrame(th,n:Integer;x,y,z,pch,yaw,rol:double);override;
 
-  Function AddThingValue(th:integer;name,val:pchar):integer;override;
-  Procedure InsertThingValue(th,n:Integer;name,val:pchar);override;
+  Function AddThingValue(th:integer;name,val:PAnsiChar):integer;override;
+  Procedure InsertThingValue(th,n:Integer;name,val:PAnsiChar);override;
   Procedure DeleteThingValue(th,n:integer);override;
 
   {COGs}
-  Function AddCOG(name:pchar):Integer;override;
+  Function AddCOG(name:PAnsiChar):Integer;override;
   Procedure DeleteCOG(n:integer);override;
   Procedure UpdateCOG(cg:integer);override;
 
-  Function GetCOGFileName(cg:integer):pchar;override;
+  Function GetCOGFileName(cg:integer):PAnsiChar;override;
   Function NCOGValues(cg:integer):integer;override;
 
-  Function GetCOGValueName(cg,n:Integer):pchar;override;
+  Function GetCOGValueName(cg,n:Integer):PAnsiChar;override;
   Function GetCOGValueType(cg,n:Integer):integer;override;
 
-  Function GetCOGValue(cg,n:Integer):pchar;override;
-  Function SetCOGValue(cg,n:Integer;val:pchar):boolean;override;
+  Function GetCOGValue(cg,n:Integer):PAnsiChar;override;
+  Function SetCOGValue(cg,n:Integer;val:PAnsiChar):boolean;override;
 
-  Function AddCOGValue(cg:integer;name,val:pchar;vtype:integer):integer;override;
-  Procedure InsertCOGValue(cg,n:Integer;name,val:pchar;vtype:integer);override;
+  Function AddCOGValue(cg:integer;name,val:PAnsiChar;vtype:integer):integer;override;
+  Procedure InsertCOGValue(cg,n:Integer;name,val:PAnsiChar;vtype:integer);override;
   Procedure DeleteCOGValue(cg,n:integer);override;
 
  end;
@@ -380,10 +380,23 @@ uses  Item_edit, u_MsgForm, u_Tools, JED_Main,lev_utils,JED_OLE, listRes,
       u_CogForm, FlagEditor, U_SCFEdit,U_Options, u_tbar, Cons_Checker, u_Preview,
       Files,FileOperations,FileDialogs;
 
+{ Plugin interface is ANSI (PAnsiChar). Strings returned to plugins are kept alive
+ in a ring of AnsiStrings so the pointer stays valid after the call returns. }
+const AnsiRetRingSize=256;
+var AnsiRetRing:array[0..AnsiRetRingSize-1] of AnsiString;
+    AnsiRetIdx:integer=0;
+
+Function AnsiRet(const s:string):PAnsiChar;
+begin
+ AnsiRetIdx:=(AnsiRetIdx+1) mod AnsiRetRingSize;
+ AnsiRetRing[AnsiRetIdx]:=AnsiString(s);
+ Result:=PAnsiChar(AnsiRetRing[AnsiRetIdx]);
+end;
+
 var jedcom:IJED;
     olejedapp:TJEDApp;
     comlevel:TCOMLevel;
-    tmpstr:array[0..2047] of char;
+    tmpstr:array[0..2047] of AnsiChar;
     ForeWnd:integer;
     atmpstr:string;
 
@@ -520,14 +533,14 @@ begin
   if (what and s_flags)<>0 then rec.Flags:=flags;
   if (what and s_ambient)<>0 then rec.Ambient:=Ambient;
   if (what and s_extra)<>0 then rec.extra:=extra;
-  if (what and s_cmp)<>0 then rec.ColorMap:=pchar(ColorMap);
+  if (what and s_cmp)<>0 then rec.ColorMap:=AnsiRet(ColorMap);
   if (what and s_tint)<>0 then
   begin
    rec.Tint_r:=Tint.dx;
    rec.Tint_g:=Tint.dy;
    rec.Tint_b:=Tint.dz;
   end;
-  if (what and s_sound)<>0 then rec.Sound:=pchar(Sound);
+  if (what and s_sound)<>0 then rec.Sound:=AnsiRet(Sound);
   if (what and s_sndvol)<>0 then rec.snd_vol:=snd_vol;
   if (what and s_layer)<>0 then rec.layer:=layer;
  end;
@@ -584,7 +597,7 @@ begin
   if (rflags and lh_PerspDist)<>0 then lh.PerspDist:=PerspDist;
   if (rflags and lh_GouraudDist)<>0 then lh.GouraudDist:=GouraudDist;
   if (rflags and lh_ppu)<>0 then lh.PixelPerUnit:=Level.PPUnit;
-  if (rflags and lh_MasterCMP)<>0 then lh.MasterCMP:=Pchar(Level.MasterCMP);
+  if (rflags and lh_MasterCMP)<>0 then lh.MasterCMP:=AnsiRet(Level.MasterCMP);
 
  end;
 end;
@@ -758,7 +771,7 @@ begin
   if (rflags and sf_adjoinflags)<>0 then rec.AdjoinFlags:=AdjoinFlags;
   if (rflags and sf_SurfFlags)<>0 then rec.SurfFlags:=SurfFlags;
   if (rflags and sf_FaceFlags)<>0 then rec.FaceFlags:=FaceFlags;
-  if (rflags and sf_Material)<>0 then rec.Material:=pchar(material);
+  if (rflags and sf_Material)<>0 then rec.Material:=AnsiRet(material);
   if (rflags and sf_geo)<>0 then rec.geo:=geo;
   if (rflags and sf_light)<>0 then rec.light:=light;
   if (rflags and sf_tex)<>0 then rec.tex:=tex;
@@ -911,7 +924,7 @@ Procedure TCOMLevel.GetThing(th:integer;var rec:TJEDThingRec;rflags:integer);
 begin
  with level.things[th] do
  begin
-  if (rflags and th_name)<>0 then rec.name:=pchar(name);
+  if (rflags and th_name)<>0 then rec.name:=AnsiRet(name);
   if (rflags and th_sector)<>0 then
   begin
    if sec=nil then rec.Sector:=-1
@@ -1049,12 +1062,12 @@ begin
  Result:=Level.Layers.count;
 end;
 
-Function TCOMLevel.GetLayerName(n:integer):pchar;
+Function TCOMLevel.GetLayerName(n:integer):PAnsiChar;
 begin
- Result:=Pchar(Level.GetLayerName(n));
+ Result:=AnsiRet(Level.GetLayerName(n));
 end;
 
-Function TCOMLevel.AddLayer(name:Pchar):integer;
+Function TCOMLevel.AddLayer(name:PAnsiChar):integer;
 begin
  Result:=Level.AddLayer(name);
 end;
@@ -1066,21 +1079,21 @@ begin
  result:=Level.Things[th].Vals.count;
 end;
 
-Function TCOMLevel.GetThingValueName(th,n:Integer):pchar;
+Function TCOMLevel.GetThingValueName(th,n:Integer):PAnsiChar;
 begin
- result:=PChar(Level.Things[th].Vals[n].Name);
+ result:=AnsiRet(Level.Things[th].Vals[n].Name);
 end;
 
-Function TCOMLevel.GetThingValueData(th,n:integer):pchar;
+Function TCOMLevel.GetThingValueData(th,n:integer):PAnsiChar;
 begin
- result:=Pchar(Level.Things[th].Vals[n].AsString);
+ result:=AnsiRet(Level.Things[th].Vals[n].AsString);
 end;
 
-Procedure TCOMLevel.SetThingValueData(th,n:Integer;val:pchar);
+Procedure TCOMLevel.SetThingValueData(th,n:Integer;val:PAnsiChar);
 var v:TTPLValue;
 begin
  v:=Level.Things[th].Vals[n];
- S2TPLVal(v.name+'='+val,v);
+ S2TPLVal(v.name+'='+String(val),v);
 end;
 
 Procedure TCOMLevel.GetThingFrame(th,n:Integer;var x,y,z,pch,yaw,rol:double);
@@ -1094,19 +1107,19 @@ begin
 end;
 
 
-Function TCOMLevel.AddThingValue(th:integer;name,val:pchar):integer;
+Function TCOMLevel.AddThingValue(th:integer;name,val:PAnsiChar):integer;
 var v:TTPLValue;
 begin
  v:=TTplValue.Create;
- S2TPLVal(name+'='+val,v);
+ S2TPLVal(String(name)+'='+String(val),v);
  Result:=Level.Things[th].Vals.Add(v);
 end;
 
-Procedure TCOMLevel.InsertThingValue(th,n:Integer;name,val:pchar);
+Procedure TCOMLevel.InsertThingValue(th,n:Integer;name,val:PAnsiChar);
 var v:TTPLValue;
 begin
  v:=TTplValue.Create;
- S2TPLVal(name+'='+val,v);
+ S2TPLVal(String(name)+'='+String(val),v);
  Level.Things[th].Vals.Insert(n,v);
 end;
 
@@ -1120,7 +1133,7 @@ end;
 
 
 {COGs}
-Function TCOMLevel.AddCOG(name:pchar):Integer;
+Function TCOMLevel.AddCOG(name:PAnsiChar):Integer;
 var cg:TCOG;
     cf:TCogFile;
     i:integer;
@@ -1157,9 +1170,9 @@ begin
  COgForm.UpdateCOG(cg);
 end;
 
-Function TCOMLevel.GetCOGFileName(cg:integer):pchar;
+Function TCOMLevel.GetCOGFileName(cg:integer):PAnsiChar;
 begin
- Result:=PChar(Level.COGS[cg].name);
+ Result:=AnsiRet(Level.COGS[cg].name);
 end;
 
 Function TCOMLevel.NCOGValues(cg:integer):integer;
@@ -1167,9 +1180,9 @@ begin
  Result:=Level.COGS[cg].vals.count;
 end;
 
-Function TCOMLevel.GetCOGValueName(cg,n:Integer):pchar;
+Function TCOMLevel.GetCOGValueName(cg,n:Integer):PAnsiChar;
 begin
- Result:=PChar(Level.COGS[cg].vals[n].Name);
+ Result:=AnsiRet(Level.COGS[cg].vals[n].Name);
 end;
 
 Function TCOMLevel.GetCOGValueType(cg,n:Integer):integer;
@@ -1177,17 +1190,17 @@ begin
  Result:=Integer(Level.COGS[cg].vals[n].cog_type);
 end;
 
-Function TCOMLevel.GetCOGValue(cg,n:Integer):pchar;
+Function TCOMLevel.GetCOGValue(cg,n:Integer):PAnsiChar;
 begin
- Result:=PChar(Level.COGS[cg].vals[n].AsString);
+ Result:=AnsiRet(Level.COGS[cg].vals[n].AsString);
 end;
 
-Function TCOMLevel.SetCOGValue(cg,n:Integer;val:pchar):boolean;
+Function TCOMLevel.SetCOGValue(cg,n:Integer;val:PAnsiChar):boolean;
 begin
  Result:=Level.cogs[cg].Vals[n].JedVal(val);
 end;
 
-Function TCOMLevel.AddCOGValue(cg:integer;name,val:pchar;vtype:integer):integer;
+Function TCOMLevel.AddCOGValue(cg:integer;name,val:PAnsiChar;vtype:integer):integer;
 var v:TCOGValue;
 begin
  v:=TCogValue.Create;
@@ -1198,7 +1211,7 @@ begin
  result:=Level.cogs[cg].Vals.Add(v);
 end;
 
-Procedure TCOMLevel.InsertCOGValue(cg,n:Integer;name,val:pchar;vtype:integer);
+Procedure TCOMLevel.InsertCOGValue(cg,n:Integer;name,val:PAnsiChar;vtype:integer);
 var v:TCOGValue;
 begin
  v:=TCogValue.Create;
@@ -1313,7 +1326,7 @@ begin
  end;
 end;
 
-Procedure TJEDCOM.LoadLevel(name:pchar);
+Procedure TJEDCOM.LoadLevel(name:PAnsiChar);
 begin
  JedMain.OpenProject(name,op_open);
 end;
@@ -1525,7 +1538,7 @@ begin
  result:=Level.sectors.count-1;
 end;
 
-Procedure TJEDCOM.StartUndo(name:pchar);
+Procedure TJEDCOM.StartUndo(name:PAnsiChar);
 begin
  StartUndoRec(name);
 end;
@@ -1734,12 +1747,12 @@ begin
  Result:=JedMain.ltsel.FindLT(lt);
 end;
 
-Procedure TJEDCOM.SaveJED(name:pchar);
+Procedure TJEDCOM.SaveJED(name:PAnsiChar);
 begin
  JedMain.SaveJedTo(name);
 end;
 
-Procedure TJEDCOM.SaveJKL(name:pchar);
+Procedure TJEDCOM.SaveJKL(name:PAnsiChar);
 begin
  JedMain.SaveJKLto(name);
 end;
@@ -1749,12 +1762,12 @@ begin
  JedMain.Invalidate;
 end;
 
-Procedure TJEDCOM.SetPickerCMP(cmp:pchar);
+Procedure TJEDCOM.SetPickerCMP(cmp:PAnsiChar);
 begin
  ResPicker.SetCMP(cmp);
 end;
 
-Function TJEDCOM.PickResource(what:integer;cur:pchar):pchar;
+Function TJEDCOM.PickResource(what:integer;cur:PAnsiChar):PAnsiChar;
 const resstr:string='';
 begin
 SaveCurApp;
@@ -1777,7 +1790,7 @@ case what of
  pr_jklsmksan: resstr:=ResPicker.PickEpSeq(cur);
 else resstr:=cur;
 end;
- result:=pchar(resstr);
+ result:=AnsiRet(resstr);
  RestoreCurApp;
 end;
 
@@ -1803,7 +1816,7 @@ begin
  JedMain.LoadTemplates;
 end;
 
-Procedure TJEDCOM.PanMessage(mtype:integer;msg:pchar);
+Procedure TJEDCOM.PanMessage(mtype:integer;msg:PAnsiChar);
 begin
  case mtype of
   0: misc_utils.PanMessage(mt_info,msg);
@@ -1824,19 +1837,20 @@ begin
  JedMain.FormKeyDown(JedMain,akey,st);
 end;
 
-Function TJEDCOM.ExecuteMenu(itemref:pchar):boolean;
+Function TJEDCOM.ExecuteMenu(itemref:PAnsiChar):boolean;
 var nmi,mi:TMenuItem;
+    ItemStr:string;
     cname:string;
     p,cpos:integer;
 
 Function GetNextItem(var s:string;pos:integer):integer;
 begin
  Result:=pos;
- While result<length(ItemRef) do
-  if ItemRef[result]<>'\' then inc(result) else break;
+ While result<length(ItemStr) do
+  if ItemStr[result]<>'\' then inc(result) else break;
 
- if result=length(itemRef) then  s:=Copy(itemref,pos,Length(ItemRef))
- else s:=Copy(itemref,pos,result-pos);
+ if result=length(ItemStr) then  s:=Copy(ItemStr,pos,Length(ItemStr))
+ else s:=Copy(ItemStr,pos,result-pos);
 
  inc(result);
 
@@ -1844,6 +1858,7 @@ end;
 
 var i:integer;s:string;
 begin
+ ItemStr:=String(itemref);
  Result:=false;
  mi:=nil;
  cpos:=getNextItem(cname,1);
@@ -1862,7 +1877,7 @@ begin
 
  if mi=nil then exit;
 
- while cpos<length(itemRef) do
+ while cpos<length(ItemStr) do
  begin
   cpos:=GetNextItem(cname,cpos);
   nmi:=nil;
@@ -1890,7 +1905,7 @@ begin
  Result:=true;
 end;
 
-Function TJEDCOM.GetJEDSetting(name:pchar):variant;
+Function TJEDCOM.GetJEDSetting(name:PAnsiChar):variant;
 begin
  Result:=GetSetting(name);
 end;
@@ -1917,9 +1932,9 @@ begin
  result:=Consistency.NErrors;
 end;
 
-Function TJEDCOM.GetConsErrorString(n:integer):pchar;
+Function TJEDCOM.GetConsErrorString(n:integer):PAnsiChar;
 begin
- result:=Pchar(Consistency.ErrorText(n));
+ result:=AnsiRet(Consistency.ErrorText(n));
 end;
 
 Function TJEDCOM.GetConsErrorType(n:integer):integer;
@@ -1969,26 +1984,26 @@ begin
  Result:=Preview3D.IsActive;
 end;
 
-Function TJEDCOM.GetJEDString(what:integer):pchar;
+Function TJEDCOM.GetJEDString(what:integer):PAnsiChar;
 begin
 case what of
- js_ProjectDir: result:=PChar(ProjectDir);
- js_JEDDir: result:=PChar(BaseDir);
- js_CDDir: result:=PChar(CDDir);
- js_GameDir: result:=PChar(GameDir);
- js_LevelFile: result:=PChar(JedMain.LevelFile);
- js_jedregkey: result:=PChar(RegBase);
- js_LECLogo: result:=PChar(LECLogo);
- js_recent1: result:=PChar(Recent1);
- js_recent2: result:=PChar(Recent2);
- js_recent3: result:=PChar(Recent3);
- js_recent4: result:=PChar(Recent4);
- js_res1gob: result:=PChar(Res1_Gob);
- js_res2gob: result:=PChar(Res2_Gob);
- js_spgob: result:=PChar(sp_Gob);
- js_mp1gob: result:=PChar(mp1_Gob);
- js_mp2gob: result:=PChar(mp2_Gob);
- js_mp3gob: result:=PChar(mp3_Gob);
+ js_ProjectDir: result:=AnsiRet(ProjectDir);
+ js_JEDDir: result:=AnsiRet(BaseDir);
+ js_CDDir: result:=AnsiRet(CDDir);
+ js_GameDir: result:=AnsiRet(GameDir);
+ js_LevelFile: result:=AnsiRet(JedMain.LevelFile);
+ js_jedregkey: result:=AnsiRet(RegBase);
+ js_LECLogo: result:=AnsiRet(LECLogo);
+ js_recent1: result:=AnsiRet(Recent1);
+ js_recent2: result:=AnsiRet(Recent2);
+ js_recent3: result:=AnsiRet(Recent3);
+ js_recent4: result:=AnsiRet(Recent4);
+ js_res1gob: result:=AnsiRet(Res1_Gob);
+ js_res2gob: result:=AnsiRet(Res2_Gob);
+ js_spgob: result:=AnsiRet(sp_Gob);
+ js_mp1gob: result:=AnsiRet(mp1_Gob);
+ js_mp2gob: result:=AnsiRet(mp2_Gob);
+ js_mp3gob: result:=AnsiRet(mp3_Gob);
 else begin
       tmpstr[0]:=#0;
       result:=@tmpstr[0];
@@ -2022,52 +2037,52 @@ else result:=0;
 end;
 end;
 
-Function TJEDCOM.FileExtractExt(path:pchar):pchar;
+Function TJEDCOM.FileExtractExt(path:PAnsiChar):PAnsiChar;
 begin
  atmpstr:=ExtractExt(path);
- result:=pchar(atmpstr);
+ result:=AnsiRet(atmpstr);
 end;
 
-Function TJEDCOM.FileExtractPath(path:pchar):pchar;
+Function TJEDCOM.FileExtractPath(path:PAnsiChar):PAnsiChar;
 begin
  atmpstr:=ExtractPath(path);
- result:=pchar(atmpstr);
+ result:=AnsiRet(atmpstr);
 end;
 
-Function TJEDCOM.FileExtractName(path:pchar):pchar;
+Function TJEDCOM.FileExtractName(path:PAnsiChar):PAnsiChar;
 begin
  atmpstr:=ExtractName(path);
- result:=pchar(atmpstr);
+ result:=AnsiRet(atmpstr);
 end;
 
-Function TJEDCOM.FindProjectDirFile(name:pchar):pchar;
+Function TJEDCOM.FindProjectDirFile(name:PAnsiChar):PAnsiChar;
 begin
  atmpstr:=FindProjDirFile(name);
- result:=pchar(atmpstr);
+ result:=AnsiRet(atmpstr);
 end;
 
-Function TJEDCOM.IsFileContainer(path:pchar):boolean;
+Function TJEDCOM.IsFileContainer(path:PAnsiChar):boolean;
 begin
  result:=IsContainer(path);
 end;
 
-Function TJEDCOM.IsFileInContainer(path:pchar):Boolean;
+Function TJEDCOM.IsFileInContainer(path:PAnsiChar):Boolean;
 begin
  result:=IsInContainer(path);
 end;
 
-Function TJEDCOM.FileOpenDialog(fname:pchar;filter:pchar):pchar;
+Function TJEDCOM.FileOpenDialog(fname:PAnsiChar;filter:PAnsiChar):PAnsiChar;
 begin
  SaveCurApp;
  GetFileOpen.FileName:=fname;
  GetFileOpen.Filter:=filter;
- if GetFileOpen.Execute then result:=pchar(GetFileOpen.FileName)
+ if GetFileOpen.Execute then result:=AnsiRet(GetFileOpen.FileName)
  else result:=nil;
  RestoreCurApp;
 end;
 
 
-Function TJEDCOM.OpenFile(name:pchar):integer;
+Function TJEDCOM.OpenFile(name:PAnsiChar):integer;
 begin
 try
  result:=files.NewHandle(OpenFileRead(name,0));
@@ -2076,7 +2091,7 @@ except
 end;
 end;
 
-Function TJEDCOM.OpenGameFile(name:pchar):integer;
+Function TJEDCOM.OpenGameFile(name:PAnsiChar):integer;
 begin
 try
  result:=files.NewHandle(FileOperations.OpenGameFile(name));
@@ -2105,10 +2120,10 @@ begin
  result:=TFile(files.GetItemNoNIL(handle)).FSize;
 end;
 
-Function TJEDCOM.GetFileName(handle:integer):pchar;
+Function TJEDCOM.GetFileName(handle:integer):PAnsiChar;
 begin
  atmpstr:=TFile(files.GetItemNoNIL(handle)).GetFullName;
- result:=pchar(atmpstr);
+ result:=AnsiRet(atmpstr);
 end;
 
 Procedure TJEDCOM.CloseFile(handle:integer);
@@ -2116,7 +2131,7 @@ begin
  files.FreeHandle(handle);
 end;
 
-Function TJEDCOM.OpenTextFile(name:pchar):integer;
+Function TJEDCOM.OpenTextFile(name:PAnsiChar):integer;
 begin
 try
  result:=tfiles.NewHandle(TTextFile.CreateRead(OpenFileRead(name,0)));
@@ -2125,7 +2140,7 @@ except
 end;
 end;
 
-Function TJEDCOM.OpenGameTextFile(name:pchar):integer;
+Function TJEDCOM.OpenGameTextFile(name:PAnsiChar):integer;
 begin
 try
  result:=tfiles.NewHandle(TTextFile.CreateRead(FileOperations.OpenGameFile(name)));
@@ -2134,16 +2149,16 @@ except
 end;
 end;
 
-Function TJEDCOM.GetTextFileName(handle:integer):pchar;
+Function TJEDCOM.GetTextFileName(handle:integer):PAnsiChar;
 begin
  atmpstr:=TTextFile(tfiles.GetItemNoNIL(handle)).GetFullName;
- result:=pchar(atmpstr);
+ result:=AnsiRet(atmpstr);
 end;
 
-Function TJEDCOM.ReadTextFileString(handle:integer):pchar;
+Function TJEDCOM.ReadTextFileString(handle:integer):PAnsiChar;
 begin
  TTextFile(tfiles.GetItemNoNIL(handle)).Readln(atmpstr);
- result:=pchar(atmpstr);
+ result:=AnsiRet(atmpstr);
 end;
 
 Function TJEDCOM.TextFileEof(handle:integer):boolean;
@@ -2161,7 +2176,7 @@ begin
  tfiles.FreeHandle(handle);
 end;
 
-Function TJEDCOM.OpenGOB(name:pchar):integer;
+Function TJEDCOM.OpenGOB(name:PAnsiChar):integer;
 begin
 try
  result:=conts.NewHandle(OpenContainer(name));
@@ -2175,17 +2190,17 @@ begin
  result:=TContainerFile(conts.GetItemNoNIL(handle)).Files.Count;
 end;
 
-Function TJEDCOM.GOBNFileName(handle:integer;n:integer):pchar;
+Function TJEDCOM.GOBNFileName(handle:integer;n:integer):PAnsiChar;
 begin
- result:=PChar(TContainerFile(conts.GetItemNoNIL(handle)).Files[n]);
+ result:=AnsiRet(TContainerFile(conts.GetItemNoNIL(handle)).Files[n]);
 end;
 
-Function TJEDCOM.GOBNFullFileName(handle:integer;n:integer):pchar;
+Function TJEDCOM.GOBNFullFileName(handle:integer;n:integer):PAnsiChar;
 var cf:TContainerFile;
 begin
  cf:=TContainerFile(conts.GetItemNoNIL(handle));
  atmpstr:=cf.Name+'>'+cf.Files[n];
- result:=PChar(atmpstr);
+ result:=AnsiRet(atmpstr);
 end;
 
 Function TJEDCOM.GOBGetFileOffset(handle:integer;n:integer):longint;

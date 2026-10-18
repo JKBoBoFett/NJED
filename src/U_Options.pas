@@ -98,6 +98,13 @@ type
 
 Procedure ReadRegistry;
 Procedure WriteRegistry(IsExit:boolean);
+Procedure WriteRecents;
+Procedure ReadRecents;
+Procedure EnsureRecents;
+Procedure ReadImportRecents;
+Procedure WriteImportRecents;
+Procedure EnsureImportRecents;
+var ImportRecents:array[1..4] of string;
 Function SetMOTS(isit:boolean):boolean;
 
 Function GetSetting(const name:string):variant;
@@ -115,7 +122,7 @@ var
   SaveSettings:boolean=true;
 
 implementation
-uses GlobalVars, Registry, FileOperations, Jed_Main;
+uses GlobalVars, Registry, IniFiles, FileOperations, Jed_Main;
 {$R *.DFM}
 
 Type
@@ -168,7 +175,7 @@ RegValues:array[0..77] of TRegValue=(
 (d_type:dt_int; RegName:'Tbar.H'; data:@TbarPos.H; onExit:true),
 (d_type:dt_bool; RegName:'TbOnTop'; data:@TbOnTop; onExit:true),
 (d_type:dt_str; RegName:'D3DDevice'; data:@D3DDevice; onExit:false),
-(d_type:dt_int; RegName:'P3DWinSize'; data:@P3DWinSize; onExit:true),
+(d_type:dt_int; RegName:'P3DWinMode'; data:@P3DWinSize; onExit:true),
 (d_type:dt_bool; RegName:'P3DOnTop'; data:@P3DOnTop; onExit:true),
 (d_type:dt_bool; RegName:'P3DColored'; data:@P3DCOloredLights; onExit:true),
 (d_type:dt_bool; RegName:'IEOnTop'; data:@IEOnTop; onExit:true),
@@ -301,6 +308,81 @@ begin
 end;
 
 
+
+Function RecentsIni:string;
+begin
+ Result:=ExtractFilePath(ParamStr(0))+'NJed_recent.ini';
+end;
+
+Procedure ReadRecents;
+var ini:TIniFile;
+begin
+ if not FileExists(RecentsIni) then exit;
+ ini:=TIniFile.Create(RecentsIni);
+ try
+  Recent1:=ini.ReadString('Recent','Recent1','');
+  Recent2:=ini.ReadString('Recent','Recent2','');
+  Recent3:=ini.ReadString('Recent','Recent3','');
+  Recent4:=ini.ReadString('Recent','Recent4','');
+ finally
+  ini.Free;
+ end;
+end;
+
+Procedure EnsureRecents;
+begin
+ // something during startup clears the list; reload it from the ini when that happens
+ if (Recent1='') and (Recent2='') and (Recent3='') and (Recent4='') then ReadRecents;
+end;
+
+Procedure ReadImportRecents;
+var ini:TIniFile;
+    i:integer;
+begin
+ if not FileExists(RecentsIni) then exit;
+ ini:=TIniFile.Create(RecentsIni);
+ try
+  for i:=1 to 4 do ImportRecents[i]:=ini.ReadString('ImportRecent','Recent'+IntToStr(i),'');
+ finally
+  ini.Free;
+ end;
+end;
+
+Procedure WriteImportRecents;
+var ini:TIniFile;
+    i:integer;
+begin
+ ini:=TIniFile.Create(RecentsIni);
+ try
+  for i:=1 to 4 do ini.WriteString('ImportRecent','Recent'+IntToStr(i),ImportRecents[i]);
+  ini.UpdateFile;
+ finally
+  ini.Free;
+ end;
+end;
+
+Procedure EnsureImportRecents;
+begin
+ if (ImportRecents[1]='') and (ImportRecents[2]='') and (ImportRecents[3]='') and (ImportRecents[4]='') then ReadImportRecents;
+end;
+
+Procedure WriteRecents;
+var ini:TIniFile;
+begin
+ // saved immediately, next to the exe, so it survives even if NJED does not exit cleanly
+ ini:=TIniFile.Create(RecentsIni);
+ try
+  ini.WriteString('Recent','Recent1',Recent1);
+  ini.WriteString('Recent','Recent2',Recent2);
+  ini.WriteString('Recent','Recent3',Recent3);
+  ini.WriteString('Recent','Recent4',Recent4);
+  ini.UpdateFile;
+ finally
+  ini.Free;
+ end;
+ if not FileExists(RecentsIni) then
+  MessageBox(0,PChar('Could not write '+RecentsIni),'NJED',0);
+end;
 
 Function TOptions.SetOptions(curPage:TTabSheet):boolean;
 var cdir:string;
@@ -584,6 +666,19 @@ Procedure TOptions.SetControls;
 var i,l:integer;
     s:string;
 begin
+ {preview window sizes (index saved as P3DWinMode)}
+ RGWSize.Items.Clear;
+ RGWSize.Items.Add('800x600');
+ RGWSize.Items.Add('1024x768');
+ RGWSize.Items.Add('1280x720');
+ RGWSize.Items.Add('1280x1024');
+ RGWSize.Items.Add('1600x900');
+ RGWSize.Items.Add('1920x1080');
+ RGWSize.Items.Add('1920x1200');
+ RGWSize.Columns:=2;
+ {Direct3D previews are old}
+ RGAPI.Items[0]:='Direct3D RM (deprecated)';
+ RGAPI.Items[2]:='Direct3D IM (deprecated)';
  EnumDevices;
  LBDevices.Items.Clear;
  for i:=0 to _D3DdriverCount-1 do
@@ -938,6 +1033,8 @@ end;
 
 Initialization
  ReadRegistry;
+ ReadRecents;
+ ReadImportRecents;
 Finalization
  if SaveSettings then WriteRegistry(true);
 

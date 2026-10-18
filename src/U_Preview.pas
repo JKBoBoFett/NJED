@@ -6,7 +6,7 @@ uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls,
    Forms, Dialogs, D3D_Prender, J_Level, Geometry, StdCtrls,
    GlobalVars, Menus, OGL_Prender, Prender, Clipbrd,
-   d3d_NPrender, u_pj3dos, ComCtrls,math, ExtCtrls;
+   d3d_NPrender, u_pj3dos, ComCtrls,math, ExtCtrls, MatPixels;
 
 type
   TCamPos=record
@@ -25,6 +25,8 @@ type
     miEdit: TMenuItem;
     miTex: TMenuItem;
     ToggleFullyLit1: TMenuItem;
+    miUntextured: TMenuItem;   // Preview menu: render untextured (created in FormCreate)
+    miGeoMode3: TMenuItem;     // Preview menu: render all surfaces as geo mode 3 (created in FormCreate)
     StatusBar1: TStatusBar;
     CB3DPStep: TComboBox;
     CBMouseSens: TComboBox;
@@ -42,6 +44,8 @@ type
     procedure FormCreate(Sender: TObject);
     procedure SetViewcamera1Click(Sender: TObject);
     procedure ToggleFullyLit1Click(Sender: TObject);
+    procedure miUntexturedClick(Sender: TObject);
+    procedure miGeoMode3Click(Sender: TObject);
     procedure FormMouseMove(Sender: TObject; Shift: TShiftState; X, Y: Integer);
     procedure FormMouseDown(Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: Integer);
@@ -144,7 +148,7 @@ var
   amountLast,yRollLast,xRollLast,zRollLast:double;
 implementation
 
-uses Lev_utils, graph_files, Images, Files, FileOperations, 
+uses Lev_utils, graph_files, Images, Files, FileOperations, U_uvedit,
   Jed_Main, U_Options, Misc_utils, Item_edit, U_tbar, ProgressDialog,FieldEdit;
 
 {$R *.DFM}
@@ -1272,6 +1276,19 @@ begin
  scs:=TStringList.Create;
  ths:=TStringList.Create;
 
+ // Preview menu render options (above Close)
+ miUntextured:=TMenuItem.Create(Self);
+ miUntextured.Caption:='Render &Untextured';
+ miUntextured.Checked:=PreviewUntextured;
+ miUntextured.OnClick:=miUntexturedClick;
+ Preview.Insert(0,miUntextured);
+ miGeoMode3:=TMenuItem.Create(Self);
+ miGeoMode3.Caption:='Render &Geo Mode 3 (solid colour)';
+ miGeoMode3.Checked:=PreviewForceGeo3;
+ miGeoMode3.OnClick:=miGeoMode3Click;
+ Preview.Insert(1,miGeoMode3);
+ Preview.Insert(2,NewLine);
+
  AddKBItem(miControl,'Rotate right',char(VK_Right),[]);
  AddKBItem(miControl,'Rotate left',char(VK_Left),[]);
  AddKBItem(miControl,'Move forth',char(VK_Up),[]);
@@ -1571,8 +1588,9 @@ begin
   ItemIndex:=0;
   OnExit:=nil;
  end;
- MakePanelButton('Apply',186,54,50,5);
+ MakePanelButton('Apply',186,54,50,5).Hint:='Apply the mapping. Hold Shift to orient a planar mapping to the camera view';
  MakePanelButton('Hide',246,54,50,6);
+ MakePanelButton('UV Editor',304,54,76,8).Hint:='Open the UV editor for the selected surfaces (same as the ` key)';
 end;
 
 Function TPreview3D.PanelVal(ed:TEdit;var d:double):boolean;
@@ -1641,7 +1659,7 @@ end;
   (a seam). Coordinates outside the texture wrap around (the texture repeats), so outlines are also drawn
   across the opposite edge. Image pixel (x/scale, y/scale) is texel (u, v). }
 procedure TPreview3D.SurfPanelButtonClick(Sender: TObject);
-var a:double;
+var a,p,y:double;
 begin
  case (Sender as TButton).Tag of
   1: JedMain.SurfScaleStep(true);
@@ -1654,10 +1672,18 @@ begin
       if Render3D<>nil then
       begin
        SurfCamX:=Render3D.CamX; SurfCamY:=Render3D.CamY; SurfCamZ:=Render3D.CamZ;
+       p:=Render3D.PCH/180*PI;
+       y:=Render3D.YAW/180*PI;
+       SurfCamRX:=cos(y);          SurfCamRY:=-sin(y);         SurfCamRZ:=0;
+       SurfCamUX:=sin(p)*sin(y);   SurfCamUY:=sin(p)*cos(y);   SurfCamUZ:=cos(p);
+       // Shift+Apply lays the texture out as seen through this camera; plain Apply uses world up
+       SurfHasCamView:=(GetKeyState(VK_SHIFT) and $8000)<>0;
       end;
       JedMain.SurfProject(cbMap.ItemIndex);
+      SurfHasCamView:=false;
      end;
   6: begin HideSurfPanel; Invalidate; exit; end;
+  8: begin UVEdit.Show; ActiveControl:=nil; exit; end;
  end;
  RefreshSurfPanel;
  ActiveControl:=nil;
@@ -1723,6 +1749,20 @@ begin
  Self.Hide;
  ShowPreview;
  RestoreCamPos(cpos);
+end;
+
+procedure TPreview3D.miUntexturedClick(Sender: TObject);
+begin
+ PreviewUntextured:=not PreviewUntextured;
+ miUntextured.Checked:=PreviewUntextured;
+ Repaint;
+end;
+
+procedure TPreview3D.miGeoMode3Click(Sender: TObject);
+begin
+ PreviewForceGeo3:=not PreviewForceGeo3;
+ miGeoMode3.Checked:=PreviewForceGeo3;
+ Repaint;
 end;
 
 Procedure TPreview3D.GetCam(var x,y,z,pch,yaw:double);

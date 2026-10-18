@@ -25,7 +25,7 @@ Type
 
 Const
      MaxMsgs=500;
-     JedVerNum='0.974';
+     JedVerNum='0.975';
      JedVersion:string=JedVerNum+' beta';
      LECLogo:String=
 '................................'#13#10+
@@ -83,12 +83,10 @@ EpisodeJKTpl:String=
 
 RegBase='\Software\Code Alliance\Jed';
 
-m_320x240=0;
-m_400x300=1;
-m_512x384=2;
-m_640x480=3;
-m_800x600=4;
-m_1024x768=5;
+{3D preview window size modes - index into P3DWidths/P3DHeights}
+P3DSizeCount=7;
+P3DWidths:array[0..6] of integer=(800,1024,1280,1280,1600,1920,1920);
+P3DHeights:array[0..6] of integer=(600,768,720,1024,900,1080,1200);
 
 MR_old=1; {MapRot consts}
 MR_New=0;
@@ -229,27 +227,32 @@ begin
  if (x>0) and (x<Screen.Width-20) then f.left:=X;
  if (y>0) and (y<Screen.height-20) then f.top:=Y;
 
- case mode of
-  m_320x240: begin f.clientwidth:=320; f.clientheight:=240; end;
-  m_400x300: begin f.clientwidth:=400; f.clientheight:=300; end;
-  m_512x384: begin f.clientwidth:=512; f.clientheight:=384; end;
-  m_640x480: begin f.clientwidth:=640; f.clientheight:=480; end;
-  m_800x600: begin f.clientwidth:=800; f.clientheight:=600; end;
-  m_1024x768: begin f.clientwidth:=1024; f.clientheight:=768; end;
+ if (mode>=0) and (mode<P3DSizeCount) then
+ begin
+  f.clientwidth:=P3DWidths[mode];
+  f.clientheight:=P3DHeights[mode];
  end;
+
+ {keep the window on the screen}
+ if f.Width>Screen.WorkAreaWidth then f.clientwidth:=f.clientwidth-(f.Width-Screen.WorkAreaWidth);
+ if f.Height>Screen.WorkAreaHeight then f.clientheight:=f.clientheight-(f.Height-Screen.WorkAreaHeight);
+ if f.Left+f.Width>Screen.WorkAreaWidth then f.Left:=Screen.WorkAreaWidth-f.Width;
+ if f.Top+f.Height>Screen.WorkAreaHeight then f.Top:=Screen.WorkAreaHeight-f.Height;
+ if f.Left<0 then f.Left:=0;
+ if f.Top<0 then f.Top:=0;
 end;
 
 Procedure GetP3DPos(f:TForm;var x,y,mode:integer);
-var w:integer;
+var i,d,best:integer;
 begin
  x:=f.left; y:=f.top;
- w:=f.clientwidth;
- if w<360 then mode:=m_320x240
- else if w<458 then mode:=m_400x300
- else if w<576 then mode:=m_512x384
- else if w<720 then mode:=m_640x480
- else if w<912 then mode:=m_800x600
- else mode:=m_1024x768;
+ mode:=0;
+ best:=MaxInt;
+ for i:=0 to P3DSizeCount-1 do
+ begin
+  d:=abs(f.clientwidth-P3DWidths[i])+abs(f.clientheight-P3DHeights[i]);
+  if d<best then begin best:=d; mode:=i; end;
+ end;
 end;
 
 Function GetStayOnTop(f:Tform):boolean;

@@ -17,6 +17,7 @@ T3DPTexture=class
  width,height:integer;
  AlphaMode:integer;   {0=opaque, 1=cutout (1 bit alpha), 2=blended (4 bit alpha)}
  GlowMode:integer;    {0=no glow, 1=8 bit CMP glow (added as is), 2=16 bit flag 2 mask (added where the surface is unlit)}
+ SolidR,SolidG,SolidB:byte;   {geo mode 3: the mat's solid colour (its palette index looked up in the CMP)}
  {Procedure SetCurrent;virtual;abstract;}
 end;
 
@@ -36,6 +37,7 @@ T3DPSurf=class
  selected:boolean;
  sortdist:double;   {squared distance to camera, used to sort blended surfaces}
  translucent:boolean;   {face flag FF_Transluent set: drawn blended}
+ geo:integer;           {geometry mode of the face; 3 = solid colour, drawn with the mat's colour instead of its texture}
  normal:Tvector;
  vxds:TList;
  tx:T3DPTexture;
@@ -725,6 +727,7 @@ begin
   surf:=Result.AddSurf;
   surf.normal:=normal;
   surf.translucent:=(FaceFlags and FF_Transluent)<>0;
+  surf.geo:=geo;
   if s.Flags and SF_3DO<>0 then SetVec(surf.normal,-normal.dx,-normal.dy,-normal.dz);
 
   nvx:=Vertices.Count;
@@ -876,6 +879,7 @@ begin
   if (geo=0) or (Mat='') then continue;
 
   surf:=Result.AddSurf;
+  surf.geo:=geo;
   CalcNormal;
   surf.normal:=normal;
   ttx:=nil;
@@ -955,6 +959,7 @@ begin
   if (geo=0) or (Mat='') then continue;
 
   surf:=Result.AddSurf;
+  surf.geo:=geo;
   CalcNormal;
   surf.normal.dx:=normal.dx;
   surf.normal.dy:=normal.dy;

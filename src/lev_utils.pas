@@ -1436,6 +1436,9 @@ var
 
   Msect:TJKsector;
   asec:TJKSector;
+  txd:TXData;        // original surface's texture mapping
+  tmpl:TJKSurface;   // copy of the original surface's material/flags/scale
+  firstNew:integer;
 begin
  StartUndoRec('Inset surface(s)');
 
@@ -1447,6 +1450,12 @@ begin
  surfnumverts:=surf.Vertices.Count;
  vec:= surf.normal;
  Msect:=surf.sector;
+
+ // Remember the original surface's texture mapping and settings before it is deleted,
+ // so the new surfaces can be given the same mapping (otherwise their UVs are all 0).
+ SaveTXData(surf,0,txd);
+ tmpl:=Msect.NewSurface;
+ tmpl.Assign(surf);
   SaveSecUndo(Msect,ch_changed,sc_both);
  for i := surfnumverts - 1 downto (0) do
    begin
@@ -1491,10 +1500,12 @@ begin
 
    sec:=surf.sector.num;
    surf.sector.surfaces.Delete(surf.num);
+   firstNew:=Msect.surfaces.count;
 
    for i :=  0  to surfnumverts - 1  do
          begin
           new_surf:=SectorAddSurface(JedMain.cur_sc);
+          Msect.surfaces[Msect.surfaces.count-1].Assign(tmpl);
            SectorUpdate(JedMain.cur_sc);
 
                 //add new vertex to surface
@@ -1524,9 +1535,10 @@ begin
 
          end;
 
-         if  surfnumverts > 3 then
+         if  surfnumverts >= 3 then
         begin
          new_surf:=SectorAddSurface(JedMain.cur_sc);
+         Msect.surfaces[Msect.surfaces.count-1].Assign(tmpl);
          for i :=  0  to surfnumverts - 1  do
          begin
          SurfaceAddVertex(JedMain.cur_sc,new_surf,newface[5].index[i]);
@@ -1535,10 +1547,17 @@ begin
 
         SectorUpdate(JedMain.cur_sc);
 
-        for n := 0 to (Level.Sectors[JedMain.cur_sc].surfaces.count - 1) do
-                   begin
-                   SurfaceUpdate(JedMain.cur_sc,n,7);
-                   end;
+        // The inset stays in the original plane, so re-use the original UV mapping on every new
+        // surface (border quads + inner face): the texture continues unbroken across the inset.
+        // Only the new surfaces are touched; existing surfaces keep their UVs as they were.
+        for n := firstNew to Msect.surfaces.count - 1 do
+        begin
+         Msect.surfaces[n].Recalc;
+         Msect.surfaces[n].CheckIfFloor;
+         ApplyTXData(Msect.surfaces[n],txd);
+        end;
+        tmpl.Free;
+        JedMain.SectorChanged(Msect);
   end;
 
 //NJED 10/09/2022

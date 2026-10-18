@@ -126,6 +126,7 @@ type
   public
     procedure DrawScene;
     procedure LoadTexture;
+    procedure ReloadSurface;   // re-read the surface, re-align and re-centre the view (after JED changed its UVs)
   end;
 
 var
@@ -810,8 +811,8 @@ begin
   end;
 
   m := AddTop('&File');
-  Add(m, 'Export layout as 16-bit MAT + outline PNG...'#9'Ctrl+E', Ord('E'), 2);
-  Add(m, 'Export outline over current texture (PNG)...'#9'Ctrl+Shift+E', Ord('E'), 3);
+  //Add(m, 'Export layout as 16-bit MAT + outline PNG...'#9'Ctrl+E', Ord('E'), 2);
+  //Add(m, 'Export outline over current texture (PNG)...'#9'Ctrl+Shift+E', Ord('E'), 3);
 
   m := AddTop('&Edit');
   Add(m, 'Undo last action'#9'Esc', VK_ESCAPE, 0);
@@ -854,6 +855,7 @@ begin
   Add(m, '-', 0, 0);
   Add(m, 'Snap on/off'#9'S', Ord('S'), 0);
   Add(m, 'Show other faces on/off'#9'O', Ord('O'), 0);
+  Add(m, 'Hide / show side panel (UV list)'#9'B', Ord('B'), 0);
 
   m := AddTop('&Help');
   Add(m, 'Controls...'#9'F1', VK_F1, 0);
@@ -981,6 +983,7 @@ procedure TUVEdit.FormCreate(Sender: TObject);
 begin
   KeyPreview := True;          // form receives key events before controls
   Panel2.TabStop := False;     // panel won't steal focus on click
+  Panel1.Visible := False;      // side panel starts hidden (B shows it)
 
   glDC := GetDC(Panel2.Handle);
   RC   := CreateRenderingContext(glDC, [opDoubleBuffered], 32, 24, 0, 0, 0, 0);
@@ -1012,7 +1015,7 @@ end;
 procedure TUVEdit.FormShow(Sender: TObject);
 begin
   Label1.Caption := 'Show';
-  Caption := 'UV Editor (build 33)';   // confirms this file is the one compiled
+  Caption := 'UV Editor (build 35)';   // confirms this file is the one compiled
   ActivateRenderingContext(glDC, RC);
   wglMakeCurrent(glDC, RC);
   SetPointSize(3);
@@ -1723,6 +1726,12 @@ begin
          else Exit;
     { flip the selection on screen: H = left/right, V = up/down }
     Ord('X'): if not (ssCtrl in Shift) and not (ssAlt in Shift) then MirrorTool(ssShift in Shift) else Exit;
+    Ord('B'): if not (ssCtrl in Shift) and not (ssAlt in Shift) then
+              begin
+                Panel1.Visible := not Panel1.Visible;
+                DrawScene;
+              end
+              else Exit;
     Ord('P'): if not (ssCtrl in Shift) and not (ssAlt in Shift) then PackLayout(ssShift in Shift) else Exit;
     Ord('H'): TransformSelection(-1, 0, 0, 1);
     Ord('V'): TransformSelection(1, 0, 0, -1);
@@ -1775,6 +1784,7 @@ begin
       '  Ctrl+A all   Ctrl+Shift+A none   Ctrl+I invert'#13#10 +
       '  Ctrl+E export the linked-face layout as a 16-bit MAT + outline PNG (moves the UVs into the texture)'#13#10 +
       '  Ctrl+Shift+E outline over the current texture (no UV change)'#13#10 +
+      '  B hide / show the side panel'#13#10 +
       '  P pack linked faces with no overlap (touching faces stay together)   Shift+P every face on its own'#13#10 +
       '  X select faces mirrored vs this face   Shift+X flip them to match'#13#10 +
       '  G add neighbouring faces (same texture)   Ctrl+G all connected   Shift+G one face'#13#10 +
@@ -1834,8 +1844,14 @@ function TUVEdit.ScreenToUV(ScreenX, ScreenY: Integer): TPointf;
 var
   HalfW, HalfH, sx, sy: Double;
 begin
+  // the shorter side of the panel spans 2*ZoomFactor; the longer side is extended so pixels stay square
   HalfH := ZoomFactor;
-  HalfW := ZoomFactor;   // square — matches glOrtho
+  HalfW := ZoomFactor;
+  if (Panel2.Width > 0) and (Panel2.Height > 0) then
+  begin
+    if Panel2.Width >= Panel2.Height then HalfW := ZoomFactor * Panel2.Width / Panel2.Height
+    else HalfH := ZoomFactor * Panel2.Height / Panel2.Width;
+  end;
 
   // pixel -> view coords centred on 0 (Y up), then undo the view rotation:
   // uv = R^T * view + centre   (R is a rotation/reflection, so R^-1 = R^T)
@@ -1872,8 +1888,14 @@ begin
 
   TexAspect := Double(FTexWidth) / Double(FTexHeight);
 
+  // the shorter side of the panel spans 2*ZoomFactor; the longer side is extended so pixels stay square
   HalfH := ZoomFactor;
-  HalfW := ZoomFactor;  // square projection
+  HalfW := ZoomFactor;
+  if (Panel2.Width > 0) and (Panel2.Height > 0) then
+  begin
+    if Panel2.Width >= Panel2.Height then HalfW := ZoomFactor * Panel2.Width / Panel2.Height
+    else HalfH := ZoomFactor * Panel2.Height / Panel2.Width;
+  end;
 
   { View space centred on 0, Y up }
   glOrtho(-HalfW, HalfW, -HalfH, HalfH, -1.0, 1.0);
@@ -2374,6 +2396,12 @@ begin
   NotifyJED;
   Windows.SetFocus(0);
   DrawScene;
+end;
+
+procedure TUVEdit.ReloadSurface;
+begin
+  if not Visible then Exit;
+  LoadSurface;
 end;
 
 procedure TUVEdit.Timer1Timer(Sender: TObject);

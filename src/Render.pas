@@ -53,6 +53,7 @@ TRenderer=class
  GridX,GridY,GridZ:double;
  GridLine, OGridLine,
  GridDot,GridStep:double;
+ HideGrid:boolean;   {when true DrawGrid skips drawing (grid size is still updated for snapping)}
 
  Private
 
@@ -347,6 +348,8 @@ begin
         GridLine:=0.01;
         end;
    end;
+
+ if HideGrid then exit;   {only the drawing is skipped; GridSize/GridLine above are still set}
 
  v1:=TVertex.Create; v2:=TVertex.Create;
  n:=Round(GridSize/GridDot);
